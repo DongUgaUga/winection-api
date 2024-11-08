@@ -18,7 +18,6 @@ open = [False, False, False, False, False]
 gesture = [[True, True, True, True, True, "Hi"],
            [False, True, True, False, False, "Yeah!"],
            [True, False, False, False, False, "Good"],
-           [False, False, False, False, False, "Singing"],
            [False, False, True, False, False, "Fuck"]]
 
 while True:
