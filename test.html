@@ -7,36 +7,65 @@
 </head>
 <body>
     <h1>1:1 화상채팅 및 손 인식</h1>
+
+    <!-- 로컬 및 상대방의 영상 송출 영역 -->
     <video id="localVideo" autoplay playsinline style="border: 2px solid green; width: 640px; height: 480px; transform: scaleX(-1);"></video>
-    <video id="remoteVideo" autoplay playsinline style="border: 2px solid red; width: 640px; height: 480px;transform: scaleX(-1);"></video>
-    <p>내 손 정보: <span id="myHandInfo">[대기 중...]</span></p>
-    <p>상대방 손 정보: <span id="peerHandInfo">[대기 중...]</span></p>
+    <video id="remoteVideo" autoplay playsinline style="border: 2px solid red; width: 640px; height: 480px; transform: scaleX(-1);"></video>
+    <!-- id="remoteVideo"에서 상대방 영상이 송출 되어야 함.(테스트 용도 구현x) -->
+
+    <!-- 상태 및 손 정보 표시 -->
+    <p id="peerStatus">클라이언트를 찾고 있습니다...</p>
+    <p>내 손 정보: <span id="myHandInfo">[]</span></p>
+    <p>상대방 손 정보: <span id="peerHandInfo"></span></p>
 
     <script>
+        // 방 번호 입력 및 웹소켓 연결(테스트 용도)
+        // 후에 해시 함수를 대입하여 임의의 방 번호 생성 예정
         let roomId = prompt("참여할 방 번호를 입력하세요 (예: room1)");
+
+        // HTML 요소 선택
         const localVideo = document.getElementById("localVideo");
         const remoteVideo = document.getElementById("remoteVideo");
         const myHandInfo = document.getElementById("myHandInfo");
         const peerHandInfo = document.getElementById("peerHandInfo");
+        const peerStatus = document.getElementById("peerStatus");
 
-        const ws = new WebSocket(`ws://localhost:8000/ws/${roomId}`);
+        // 웹소켓 서버와 연결 설정
+        const ws = new WebSocket(`ws://192.168.1.8:8000/ws/${roomId}`);
 
+        let peerConnected = false;  // 상대방 연결 여부 확인 변수
+
+        // 웹소켓이 성공적으로 연결되었을 때 실행되는 함수
         ws.onopen = () => {
             console.log(`Connected to room ${roomId}`);
             startStreaming();
         };
 
+        // 웹소켓 메시지를 수신할 때 실행되는 함수
         ws.onmessage = (event) => {
             const data = JSON.parse(event.data);
             console.log("받은 데이터:", data);
 
+            // 상대방이 접속했는지 확인 후 화면 업데이트
             if (data.client_id === "peer") {
-                peerHandInfo.innerText = JSON.stringify(data.hand_info);
+                peerConnected = true;
+                peerStatus.innerText = "통신 중입니다.";
+                peerHandInfo.innerText = JSON.stringify(data.hand_info || "[]");
             } else {
-                myHandInfo.innerText = JSON.stringify(data.hand_info);
+                myHandInfo.innerText = JSON.stringify(data.hand_info || "[]");
             }
+
+            updatePeerStatus();
         };
 
+        // 웹소켓 연결이 종료되었을 때 실행되는 함수
+        ws.onclose = () => {
+            console.log("서버와 연결이 종료되었습니다.");
+            peerConnected = false;
+            updatePeerStatus();
+        };
+
+        // 로컬 웹캠 스트리밍 시작 함수
         function startStreaming() {
             navigator.mediaDevices.getUserMedia({ video: true })
                 .then((stream) => {
@@ -44,6 +73,7 @@
                     const canvas = document.createElement("canvas");
                     const ctx = canvas.getContext("2d");
 
+                    // 0.5초마다 영상 프레임을 캡처 및 서버로 전송
                     setInterval(() => {
                         canvas.width = localVideo.videoWidth;
                         canvas.height = localVideo.videoHeight;
@@ -55,6 +85,15 @@
                 .catch((err) => {
                     console.error("웹캠 접근 에러:", err);
                 });
+        }
+
+        // 상대방 연결 상태 업데이트 함수
+        function updatePeerStatus() {
+            if (!peerConnected) {
+                peerStatus.innerText = "클라이언트를 찾고 있습니다...";
+                myHandInfo.innerText = "[]";
+                peerHandInfo.innerText = "";
+            }
         }
     </script>
 </body>

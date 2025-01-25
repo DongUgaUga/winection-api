@@ -5,8 +5,6 @@ import mediapipe as mp
 import base64
 import uuid
 
-
-
 app = FastAPI()
 
 # MediaPipe Hands 모델 초기화 (손 인식을 위한 설정)
@@ -55,7 +53,7 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
         return
 
     # 방에 클라이언트 추가
-    rooms[room_id].append((client_id, websocket))
+    rooms[room_id].append({"client_id": client_id, "websocket": websocket})
 
     try:
         while True:
@@ -68,17 +66,22 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
             # 손 좌표 분석
             hands_info = analyze_hand_pose(frame)
 
-            # 클라이언트에게 손 정보 전송
-            response = {"client_id": client_id, "my_hand_info": hands_info}
-
-            for cid, client in rooms[room_id]:
-                if cid != client_id:
-                    await client.send_json({"client_id": "peer", "hand_info": hands_info})
+            # 모든 클라이언트에게 정보 전송
+            for client in rooms[room_id]:
+                if client["client_id"] != client_id:
+                    await client["websocket"].send_json({"client_id": "peer", "hand_info": hands_info})
                 else:
-                    await client.send_json({"client_id": "self", "hand_info": hands_info})
-
+                    await client["websocket"].send_json({"client_id": "self", "hand_info": hands_info})
     except WebSocketDisconnect:
         print(f"Client {client_id} disconnected from room {room_id}")
-        rooms[room_id] = [c for c in rooms[room_id] if c[0] != client_id]
+        rooms[room_id] = [c for c in rooms[room_id] if c["client_id"] != client_id]
+
+        # 방이 비었을 경우 제거
+        if not rooms[room_id]:
+            del rooms[room_id]
+
+        # 남은 클라이언트에게 상대방 나갔음을 알림
+        for client in rooms.get(room_id, []):
+            await client["websocket"].send_json({"client_id": "peer", "hand_info": "클라이언트를 찾고 있습니다..."})
     finally:
         await websocket.close()
