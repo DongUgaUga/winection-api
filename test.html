@@ -5,13 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>1:1 화상채팅 및 손 인식</title>
 
+    <!-- MediaPipe 라이브러리 로드 -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
 </head>
 <body>
     <h1>1:1 화상채팅 및 손 인식</h1>
 
-     <!-- 로컬 및 상대방의 영상 송출 영역 -->
+    <!-- 로컬 및 상대방의 영상 송출 영역 -->
     <video id="localVideo" autoplay playsinline style="border: 2px solid green; width: 640px; height: 480px; transform: scaleX(-1);"></video>
     <video id="remoteVideo" autoplay playsinline style="border: 2px solid red; width: 640px; height: 480px; transform: scaleX(-1);"></video>
     <!-- id="remoteVideo"에서 상대방 영상이 송출 되어야 함.(테스트 용도 구현x) -->
@@ -34,33 +35,86 @@
         const peerStatus = document.getElementById("peerStatus");
 
         // 웹소켓 서버와 연결 설정
-        const ws = new WebSocket(`ws://192.168.1.8:8000/ws/${roomId}`);
+        let serverIP = "192.168.1.8"; // API IP주소
+        const ws = new WebSocket(`ws://${serverIP}:8000/ws/${roomId}`);
 
         let peerConnected = false; // 상대방 연결 여부 확인 변수
+        let peerConnection = new RTCPeerConnection({
+            iceServers: [
+                { urls: "stun:stun.l.google.com:19302" }  // Google STUN 서버 사용
+            ]
+        });
 
-        // 웹소켓이 성공적으로 연결되었을 때 실행되는 함수
+        // WebRTC 로직
+        ws.onmessage = async (event) => {
+            const data = JSON.parse(event.data);
+            console.log(data)
+            
+            // WebRTC 시그널 처리
+            if (data.offer) {
+                console.log("Received WebRTC offer");
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+                ws.send(JSON.stringify({ answer: answer }));
+            }
+
+            if (data.answer) {
+                console.log("Received WebRTC answer");
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+            }
+
+            if (data.candidate) {
+                console.log("Received ICE candidate:", data.candidate);
+                await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+            }
+
+            // 손 좌표 데이터 수신 처리
+            if (data.hand_data) {
+                console.log("수신된 손 좌표 데이터:", data.hand_data);
+        
+                // 내 손 정보 업데이트
+                if (data.client_id === "self") {
+                    console.log("내 손 좌표 업데이트");
+                    myHandInfo.innerText = JSON.stringify(data.hand_data || "[]");
+                }
+        
+                // 상대방 손 정보 업데이트
+                if (data.client_id === "peer") {
+                    console.log("상대방 손 좌표 업데이트");
+                    peerHandInfo.innerText = JSON.stringify(data.hand_data || "[]");
+                }
+            }
+
+            // 상대방 연결 상태 업데이트
+            if (data.client_id === "peer") {
+                peerConnected = true;
+                peerStatus.innerText = "통신 중입니다.";
+            }
+            updatePeerStatus();
+        };
+
+        // ICE Candidate 송신
+        peerConnection.onicecandidate = (event) => {
+            if (event.candidate) {
+                console.log("Sending ICE candidate:", event.candidate);
+                ws.send(JSON.stringify({ candidate: event.candidate }));
+            }
+        };
+
+        // 상대방 스트림 수신
+        peerConnection.ontrack = (event) => {
+            console.log("Received remote stream");
+            remoteVideo.srcObject = event.streams[0];
+        };
+
+        // 웹소켓 연결 성공
         ws.onopen = () => {
             console.log(`Connected to room ${roomId}`);
             startStreaming();
         };
 
-        // 웹소켓 메시지를 수신할 때 실행되는 함수
-        ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            console.log("받은 데이터:", data);
-
-            // 상대방이 접속했는지 확인 후 화면 업데이트
-            if (data.client_id === "peer") {
-                peerConnected = true;
-                peerStatus.innerText = "통신 중입니다.";
-                peerHandInfo.innerText = JSON.stringify(data.hand_info || "[]");
-            } else {
-                myHandInfo.innerText = JSON.stringify(data.hand_info || "[]");
-            }
-            updatePeerStatus();
-        };
-
-        // 웹소켓 연결이 종료되었을 때 실행되는 함수
+        // 웹소켓 연결 종료
         ws.onclose = () => {
             console.log("서버와 연결이 종료되었습니다.");
             peerConnected = false;
@@ -72,11 +126,20 @@
             navigator.mediaDevices.getUserMedia({ video: true })
                 .then((stream) => {
                     localVideo.srcObject = stream;
+
+                    // WebRTC: 로컬 트랙 추가
+                    stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
+
+                    // WebRTC: Offer 생성 및 송신
+                    peerConnection.createOffer()
+                        .then(offer => peerConnection.setLocalDescription(offer))
+                        .then(() => ws.send(JSON.stringify({ offer: peerConnection.localDescription })));
+
+                    // MediaPipe 초기화
                     const hands = new Hands({
                         locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` // MediaPipe API 호출
                     });
 
-                    // MediaPipe 기본 설정
                     hands.setOptions({
                         maxNumHands: 2,
                         modelComplexity: 1,
@@ -86,18 +149,18 @@
 
                     const camera = new Camera(localVideo, {
                         onFrame: async () => {
-                            await hands.send({image: localVideo});
+                            await hands.send({ image: localVideo });
                         },
                         width: 640,
                         height: 480
                     });
                     camera.start();
 
-                    // MediaPipe 손 좌표 추출 및 손 구분
+                    // MediaPipe 손 좌표 추출 및 전송
                     hands.onResults((results) => {
                         if (results.multiHandLandmarks && results.multiHandedness) {
                             const handData = results.multiHandLandmarks.map((landmark, index) => ({
-                                hand_type: results.multiHandedness[index].label === "Right" ? "왼손" : "오른손", // 화면이 좌우반전 되어있어 MediaPipe가 반대로 인식
+                                hand_type: results.multiHandedness[index].label === "Right" ? "왼손" : "오른손",
                                 x: landmark[0].x.toFixed(2),
                                 y: landmark[0].y.toFixed(2),
                                 z: landmark[0].z.toFixed(2)
@@ -111,6 +174,7 @@
                 });
         }
 
+        // 연결 상태 업데이트 함수
         function updatePeerStatus() {
             if (!peerConnected) {
                 peerStatus.innerText = "클라이언트를 찾고 있습니다...";
