@@ -4,11 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>1:1 화상채팅 및 손 인식</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
 </head>
 <body>
     <h1>1:1 화상채팅 및 손 인식</h1>
 
-    <!-- 로컬 및 상대방의 영상 송출 영역 -->
+     <!-- 로컬 및 상대방의 영상 송출 영역 -->
     <video id="localVideo" autoplay playsinline style="border: 2px solid green; width: 640px; height: 480px; transform: scaleX(-1);"></video>
     <video id="remoteVideo" autoplay playsinline style="border: 2px solid red; width: 640px; height: 480px; transform: scaleX(-1);"></video>
     <!-- id="remoteVideo"에서 상대방 영상이 송출 되어야 함.(테스트 용도 구현x) -->
@@ -33,7 +36,7 @@
         // 웹소켓 서버와 연결 설정
         const ws = new WebSocket(`ws://192.168.1.8:8000/ws/${roomId}`);
 
-        let peerConnected = false;  // 상대방 연결 여부 확인 변수
+        let peerConnected = false; // 상대방 연결 여부 확인 변수
 
         // 웹소켓이 성공적으로 연결되었을 때 실행되는 함수
         ws.onopen = () => {
@@ -54,7 +57,6 @@
             } else {
                 myHandInfo.innerText = JSON.stringify(data.hand_info || "[]");
             }
-
             updatePeerStatus();
         };
 
@@ -70,24 +72,45 @@
             navigator.mediaDevices.getUserMedia({ video: true })
                 .then((stream) => {
                     localVideo.srcObject = stream;
-                    const canvas = document.createElement("canvas");
-                    const ctx = canvas.getContext("2d");
+                    const hands = new Hands({
+                        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` // MediaPipe API 호출
+                    });
 
-                    // 0.5초마다 영상 프레임을 캡처 및 서버로 전송
-                    setInterval(() => {
-                        canvas.width = localVideo.videoWidth;
-                        canvas.height = localVideo.videoHeight;
-                        ctx.drawImage(localVideo, 0, 0, canvas.width, canvas.height);
-                        const imageData = canvas.toDataURL("image/jpeg");
-                        ws.send(imageData);
-                    }, 500);
+                    // MediaPipe 기본 설정
+                    hands.setOptions({
+                        maxNumHands: 2,
+                        modelComplexity: 1,
+                        minDetectionConfidence: 0.5,
+                        minTrackingConfidence: 0.5
+                    });
+
+                    const camera = new Camera(localVideo, {
+                        onFrame: async () => {
+                            await hands.send({image: localVideo});
+                        },
+                        width: 640,
+                        height: 480
+                    });
+                    camera.start();
+
+                    // MediaPipe 손 좌표 추출 및 손 구분
+                    hands.onResults((results) => {
+                        if (results.multiHandLandmarks && results.multiHandedness) {
+                            const handData = results.multiHandLandmarks.map((landmark, index) => ({
+                                hand_type: results.multiHandedness[index].label === "Right" ? "왼손" : "오른손", // 화면이 좌우반전 되어있어 MediaPipe가 반대로 인식
+                                x: landmark[0].x.toFixed(2),
+                                y: landmark[0].y.toFixed(2),
+                                z: landmark[0].z.toFixed(2)
+                            }));
+                            ws.send(JSON.stringify({ hand_data: handData }));
+                        }
+                    });
                 })
                 .catch((err) => {
                     console.error("웹캠 접근 에러:", err);
                 });
         }
 
-        // 상대방 연결 상태 업데이트 함수
         function updatePeerStatus() {
             if (!peerConnected) {
                 peerStatus.innerText = "클라이언트를 찾고 있습니다...";
