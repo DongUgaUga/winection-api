@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>1:1 화상채팅 및 손 인식</title>
 
-    <!-- MediaPipe 라이브러리 로드 -->
+    <!-- MediaPipe: 라이브러리 로드 -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
 </head>
@@ -15,113 +15,130 @@
     <!-- 로컬 및 상대방의 영상 송출 영역 -->
     <video id="localVideo" autoplay playsinline style="border: 2px solid green; width: 640px; height: 480px; transform: scaleX(-1);"></video>
     <video id="remoteVideo" autoplay playsinline style="border: 2px solid red; width: 640px; height: 480px; transform: scaleX(-1);"></video>
-    <!-- id="remoteVideo"에서 상대방 영상이 송출 되어야 함.(테스트 용도 구현x) -->
 
     <!-- 상태 및 손 정보 표시 -->
     <p id="peerStatus">클라이언트를 찾고 있습니다...</p>
     <p>내 손 정보: <span id="myHandInfo">[]</span></p>
-    <p>상대방 손 정보: <span id="peerHandInfo"></span></p>
+    <p id="peerHandInfo"></p>
 
     <script>
-        // 방 번호 입력 및 웹소켓 연결(테스트 용도)
-        // 후에 해시 함수를 대입하여 임의의 방 번호 생성 예정
+        // WebSocket: 방 번호 입력 및 연결 설정
         let roomId = prompt("참여할 방 번호를 입력하세요 (예: room1)");
 
-        // HTML 요소 선택
+        // HTML: 요소 선택
         const localVideo = document.getElementById("localVideo");
         const remoteVideo = document.getElementById("remoteVideo");
         const myHandInfo = document.getElementById("myHandInfo");
         const peerHandInfo = document.getElementById("peerHandInfo");
         const peerStatus = document.getElementById("peerStatus");
 
-        // 웹소켓 서버와 연결 설정
-        let serverIP = "192.168.1.8"; // API IP주소
-        const ws = new WebSocket(`ws://${serverIP}:8000/ws/${roomId}`);
+        // WebSocket: 서버와 연결 설정
+        let serverIP = "192.168.1.8"; // API 서버 IP주소
+        let ws; // WebSocket 객체
+        let reconnectAttempts = 0; // 재연결 시도 횟수
+        const maxReconnectAttempts = 5; // 최대 재연결 시도 횟수
+        const reconnectDelay = 3000; // 재연결 시도 간격 (3초)
 
+        // WebRTC: Peer-to-Peer 연결 설정
         let peerConnected = false; // 상대방 연결 여부 확인 변수
         let peerConnection = new RTCPeerConnection({
             iceServers: [
-                { urls: "stun:stun.l.google.com:19302" }  // Google STUN 서버 사용
+                { urls: "stun:stun.l.google.com:19302" }  // WebRTC: Google STUN 서버 사용
             ]
         });
 
-        // WebRTC 로직
-        ws.onmessage = async (event) => {
-            const data = JSON.parse(event.data);
-            console.log(data)
-            
-            // WebRTC 시그널 처리
-            if (data.offer) {
-                console.log("Received WebRTC offer");
-                await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
-                const answer = await peerConnection.createAnswer();
-                await peerConnection.setLocalDescription(answer);
-                ws.send(JSON.stringify({ answer: answer }));
-            }
+        // WebSocket: 연결 함수
+        function connectWebSocket() {
+            ws = new WebSocket(`ws://${serverIP}:8000/ws/${roomId}`);
 
-            if (data.answer) {
-                console.log("Received WebRTC answer");
-                await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
-            }
+            // WebSocket: 메시지 수신 처리
+            ws.onmessage = async (event) => {
+                try {
+                    const data = JSON.parse(event.data);
 
-            if (data.candidate) {
-                console.log("Received ICE candidate:", data.candidate);
-                await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
-            }
+                    // WebRTC: Offer 수신 처리
+                    if (data.offer) {
+                        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+                        const answer = await peerConnection.createAnswer();
+                        await peerConnection.setLocalDescription(answer);
+                        ws.send(JSON.stringify({ answer: answer }));
+                    }
 
-            // 손 좌표 데이터 수신 처리
-            if (data.hand_data) {
-                console.log("수신된 손 좌표 데이터:", data.hand_data);
-        
-                // 내 손 정보 업데이트
-                if (data.client_id === "self") {
-                    console.log("내 손 좌표 업데이트");
-                    myHandInfo.innerText = JSON.stringify(data.hand_data || "[]");
+                    // WebRTC: Answer 수신 처리
+                    if (data.answer) {
+                        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+                    }
+
+                    // WebRTC: ICE Candidate 수신 처리
+                    if (data.candidate) {
+                        await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+                    }
+
+                    // WebSocket: 손 좌표 데이터 수신 처리
+                    if (data.hand_data) {
+                        // WebSocket: 내 손 정보 업데이트
+                        if (data.client_id === "self") {
+                            myHandInfo.innerText = JSON.stringify(data.hand_data || "[]");
+                        }
+                        // WebSocket: 상대방 손 정보 업데이트
+                        if (data.client_id === "peer") {
+                            peerHandInfo.innerText = JSON.stringify("상대방 손 정보: ") + JSON.stringify(data.hand_data || "[]");
+                        }
+                    }
+
+                    // WebSocket: 상대방 연결 상태 업데이트
+                    if (data.client_id === "peer") {
+                        peerConnected = true;
+                        peerStatus.innerText = "통신 중입니다.";
+                    }
+                    updatePeerStatus();
+                } catch (error) {
+                    console.error("WebSocket 메시지 처리 중 오류 발생:", error);
                 }
-        
-                // 상대방 손 정보 업데이트
-                if (data.client_id === "peer") {
-                    console.log("상대방 손 좌표 업데이트");
-                    peerHandInfo.innerText = JSON.stringify(data.hand_data || "[]");
+            };
+
+            // WebSocket: 연결 성공 시 호출
+            ws.onopen = () => {
+                console.log(`Connected to room ${roomId}`);
+                reconnectAttempts = 0; // 재연결 시도 횟수 초기화
+                startStreaming();
+            };
+
+            // WebSocket: 연결 종료 시 호출
+            ws.onclose = () => {
+                console.log("API 서버와 연결이 종료되었습니다.");
+                peerConnected = false;
+                updatePeerStatus();
+
+                // 재연결 시도
+                if (reconnectAttempts < maxReconnectAttempts) {
+                    reconnectAttempts++;
+                    console.log(`재연결 시도 중... (${reconnectAttempts}/${maxReconnectAttempts})`);
+                    setTimeout(connectWebSocket, reconnectDelay);
+                } else {
+                    console.error("최대 재연결 시도 횟수에 도달했습니다.");
                 }
-            }
+            };
 
-            // 상대방 연결 상태 업데이트
-            if (data.client_id === "peer") {
-                peerConnected = true;
-                peerStatus.innerText = "통신 중입니다.";
-            }
-            updatePeerStatus();
-        };
+            // WebSocket: 오류 발생 시 호출
+            ws.onerror = (error) => {
+                console.error("WebSocket 오류 발생:", error);
+            };
+        }
 
-        // ICE Candidate 송신
+        // WebRTC: ICE Candidate 송신 처리
         peerConnection.onicecandidate = (event) => {
             if (event.candidate) {
-                console.log("Sending ICE candidate:", event.candidate);
                 ws.send(JSON.stringify({ candidate: event.candidate }));
             }
         };
 
-        // 상대방 스트림 수신
+        // WebRTC: 상대방 스트림 수신 처리
         peerConnection.ontrack = (event) => {
-            console.log("Received remote stream");
             remoteVideo.srcObject = event.streams[0];
         };
 
-        // 웹소켓 연결 성공
-        ws.onopen = () => {
-            console.log(`Connected to room ${roomId}`);
-            startStreaming();
-        };
-
-        // 웹소켓 연결 종료
-        ws.onclose = () => {
-            console.log("서버와 연결이 종료되었습니다.");
-            peerConnected = false;
-            updatePeerStatus();
-        };
-
-        // 로컬 웹캠 스트리밍 시작 함수
+        // MediaPipe: 웹캠 스트리밍 및 손 좌표 처리
         function startStreaming() {
             navigator.mediaDevices.getUserMedia({ video: true })
                 .then((stream) => {
@@ -135,16 +152,16 @@
                         .then(offer => peerConnection.setLocalDescription(offer))
                         .then(() => ws.send(JSON.stringify({ offer: peerConnection.localDescription })));
 
-                    // MediaPipe 초기화
+                    // MediaPipe: 손 좌표 추출
                     const hands = new Hands({
-                        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` // MediaPipe API 호출
+                        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` // MediaPipe: 파일 경로 설정
                     });
 
                     hands.setOptions({
-                        maxNumHands: 2,
-                        modelComplexity: 1,
-                        minDetectionConfidence: 0.5,
-                        minTrackingConfidence: 0.5
+                        maxNumHands: 2, // MediaPipe: 최대 추적 손 개수
+                        modelComplexity: 1, // MediaPipe: 모델 복잡도
+                        minDetectionConfidence: 0.5, // MediaPipe: 감지 신뢰도
+                        minTrackingConfidence: 0.5 // MediaPipe: 추적 신뢰도
                     });
 
                     const camera = new Camera(localVideo, {
@@ -156,7 +173,6 @@
                     });
                     camera.start();
 
-                    // MediaPipe 손 좌표 추출 및 전송
                     hands.onResults((results) => {
                         if (results.multiHandLandmarks && results.multiHandedness) {
                             const handData = results.multiHandLandmarks.map((landmark, index) => ({
@@ -182,6 +198,9 @@
                 peerHandInfo.innerText = "";
             }
         }
+
+        // 초기 WebSocket 연결
+        connectWebSocket();
     </script>
 </body>
 </html>
