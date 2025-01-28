@@ -13,9 +13,9 @@
 ### 🔖 세팅
 새로운 터미널을 실행한다.
 
-`git clone <레포 주소>`를 통해 클론킨다.
+`git clone https://github.com/DongUgaUga/winection-api.git`를 통해 클론킨다.
 
-`cd <클론한 winection-api 디렉터리>` 클론한 디렉터리로 이동한다.
+`cd winection-api` winection-api 디렉터리로 이동한다.
 
 <br>
 
@@ -29,7 +29,7 @@ main.py 실행 명령어
 
 새로운 터미널을 실행한다.
 
-`cd <클론한 winection-api 디렉터리>` 클론한 디렉터리로 이동한다.
+`cd winection-api/test_front` test_front 디렉터리로 이동한다.
 
 test.html 실행 명령어(테스트용 프론트엔드)
 - `python3 -m http.server 8080 --bind 0.0.0.0`
