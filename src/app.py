@@ -4,6 +4,7 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
 import logging
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException
 from slts.websocket_handler import websocket_router
 from pydantic import BaseModel
@@ -17,6 +18,15 @@ app = FastAPI(
     title="Winection API",
     description="1:1 수어 번역 화상채팅 API",
     version="0.2"
+)
+
+# CORS 설정
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # 모든 도메인 허용 (보안이 필요한 경우 특정 도메인만 입력)
+    allow_credentials=True,
+    allow_methods=["*"],  # 모든 HTTP 메서드 허용 (GET, POST, PUT, DELETE 등)
+    allow_headers=["*"],  # 모든 헤더 허용
 )
 
 # WebSocket: 웹소켓 통신 
