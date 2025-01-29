@@ -4,9 +4,9 @@ import json
 import logging
 
 # Logging 설정
-logging.basicConfig(level=logging.ERROR, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-# WebSocket: 방 정보를 저장하는 딕셔너리
+# WebSocket: 방 정보를 저장
 rooms = {}
 
 # FastAPI 라우터 생성
@@ -17,7 +17,7 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
     try:
         # WebSocket: 연결 수락
         await websocket.accept()
-        print(f"INFO: Client가 Room:[{room_id}]에 접속했습니다.")
+        logging.info(f"Client가 Room:[{room_id}]에 접속했습니다.")
 
         # 방에 클라이언트 추가
         if room_id not in rooms:
@@ -71,7 +71,7 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
                     await websocket.accept()
 
     except WebSocketDisconnect:
-        print(f"INFO: Client가 Room:[{room_id}]에서 나갔습니다.")
+        logging.info(f"Client가 Room:[{room_id}]에서 나갔습니다.")
         if websocket in rooms.get(room_id, []):
             rooms[room_id].remove(websocket)
         if not rooms.get(room_id):
