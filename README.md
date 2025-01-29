@@ -18,11 +18,13 @@ git clone https://github.com/DongUgaUga/winection-api.git
 
 # 레포지토리로 디렉터리 이동
 cd winection-api
+
+echo
 ````
 
 <br>
 
-### 🔖 백엔드 실행
+### 🔖 서버 실행
 
 ```bash
 # 실행 권한 부여
@@ -31,17 +33,6 @@ chmod +x run.sh
 # 스크립트 실행
 ./run.sh  
 ```
-
-<br>
-
-### 🔖 프론트엔드 실행
-
-새로운 터미널을 실행
-```bash
-# test.html 실행(테스트용 프론트엔드)
-cd test_front
-python3 -m http.server 8080 --bind 0.0.0.0
-````
 
 <br>
 
@@ -62,12 +53,21 @@ ipconfig
 
 ### 🔖 접속 방법 
 크롬 브라우저에 아래 URL을 입력하여 접속
-```
-http://<서버IP주소>:8080/test/test.html
-```
 
-다른 클라이언트로 동일한 방법으로 URL 접속
-> 현재는 NAT 처리를 안해서 동일한 NAT 환경(같은 WIFI 또는 같은 네트워크 환경)에서만 통신이 가능하다.
+> 화상채팅 테스트
+> ```
+> http://<서버IP주소>:8080/front/rtc.html
+> ```
+> 다른 클라이언트로 동일한 방법으로 URL 접속
+>>  현재는 NAT 처리를 안해서 동일한 NAT 환경(같은 WIFI 또는 같은 네트워크 환경)에서만 통신이 가능하다.
+
+<br>
+
+> SLTS (Sign Language-To-Speech) 과정 중 단어 -> 문장 -> TTS 테스트
+> ```
+> http://<서버IP주소>:8080/front/slts.html
+> ```
+
 
 <br>
 
@@ -76,7 +76,7 @@ http://<서버IP주소>:8080/test/test.html
 ```
 /winection-api
     ├── src/
-    │   ├── app.py                          # 서버 실행
+    │   ├── app.py                          # 서버
     │   ├── slts/       
     │   │   ├── sentence_builder                 
     │   │   │   ├── generate_sentence.py    # 수어 단어 -> 문장 변환   
@@ -88,10 +88,11 @@ http://<서버IP주소>:8080/test/test.html
     │   │   ├── __init__.py
     │   │   ├── speech_to_text.py           # 음성 -> 텍스트 변환
     │   │   ├── text_to_sign.py             # 텍스트 -> 수어 애니메이션 변환
-    ├── test_front/                  
+    ├── front/                  
     │   ├── package-lock.json               
     │   ├── package.json                
-    │   ├── test.html                       # 테스트용 프론트엔드
+    │   ├── rtc.html                        # 화상채팅 프론트엔드(테스트용)
+    │   ├── stsl.html                       # 단어 -> 문장 -> TTS 프론트엔드(테스트용)
     ├── .env                                # 환경변수 파일 (직접 추가)
     ├── .gitignore                   
     ├── README.md                    

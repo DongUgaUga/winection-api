@@ -1,3 +1,9 @@
+# 가장 최근에 설치한 패키지 requirements.txt에 추가 명렁어
+## pip list --format=freeze | tail -n +1 >> requirements.txt
+
+# 특정 패키지 requirements.txt에 추가 명령어
+## pip freeze | grep "<패키지명>" >> requirements.txt
+
 fastapi==0.115.7                    # FastAPI 서버
 uvicorn==0.34.0                     # FastAPI 실행용 ASGI 서버
 openai==1.60.1                      # DeepSeek API 연동
