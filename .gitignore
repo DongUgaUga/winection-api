@@ -1,0 +1,6 @@
+# 기본생성파일
+.env
+.DS_Store
+.idea/*
+.venv/*
+*/node_modules/*
