@@ -1,10 +1,9 @@
-# 임시 구현 서버
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 import json
 import logging
 from ws.stsl.text import speech_to_text  # STT 변환 함수
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(level=logging.INFO)
 
 stsl_router = APIRouter()
 
@@ -19,8 +18,8 @@ async def websocket_stsl_endpoint(websocket: WebSocket, room_id: str):
                 data = await websocket.receive_text()
                 data_json = json.loads(data)
 
-                if "audio_data" in data_json:
-                    text_result = speech_to_text(data_json["audio_data"])
+                if "audio_base64" in data_json:
+                    text_result = speech_to_text(data_json["audio_base64"])
                     await websocket.send_json({"text": text_result})
 
             except WebSocketDisconnect:

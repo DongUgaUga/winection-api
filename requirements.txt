@@ -11,5 +11,6 @@ mediapipe==0.10.20                  # 손 좌표 추출
 opencv-contrib-python==4.10.0.84    # OpenCV 추가 기능 포함
 python-dotenv==1.0.1                # 환경변수 관리
 google-cloud-texttospeech==2.24.0   # Google TTS
+google-cloud-speech==2.30.0         # Google STT 
 pydantic==2.10.6                    # 데이터 모델 검증
 websockets==14.1                    # WebSocket 처리

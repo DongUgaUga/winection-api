@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STT 테스트</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
+        button { font-size: 16px; margin: 10px; padding: 10px; }
+        p { font-size: 18px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h2>Google STT 테스트</h2>
+    <button id="startRecording">녹음 시작</button>
+    <button id="stopRecording" disabled>녹음 중지</button>
+    <p>변환된 텍스트:</p>
+    <p id="textResult"></p>
+
+    <script>
+        let mediaRecorder;
+        let audioChunks = [];
+        let ws;
+        const serverIP = "127.0.0.1";  // 서버 IP 주소
+        const roomId = "test";  // 테스트용 방 ID
+
+        // WebSocket 연결
+        function connectWebSocket() {
+            ws = new WebSocket(`ws://${serverIP}:8000/stsl/${roomId}`);
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                document.getElementById("textResult").innerText = "변환된 텍스트: " + data.text;
+            };
+
+            ws.onerror = (error) => {
+                console.error("WebSocket 오류:", error);
+            };
+
+            ws.onclose = () => {
+                console.log("WebSocket 연결 종료됨.");
+            };
+        }
+
+        connectWebSocket();
+
+        document.getElementById("startRecording").addEventListener("click", async () => {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+
+            mediaRecorder.ondataavailable = (event) => {
+                audioChunks.push(event.data);
+            };
+
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
+                const reader = new FileReader();
+                reader.readAsDataURL(audioBlob);
+                reader.onloadend = () => {
+                    const base64String = reader.result.split(',')[1];
+                    ws.send(JSON.stringify({ audio_base64: base64String }));
+                };
+            };
+
+            audioChunks = [];
+            mediaRecorder.start();
+            document.getElementById("startRecording").disabled = true;
+            document.getElementById("stopRecording").disabled = false;
+        });
+
+        document.getElementById("stopRecording").addEventListener("click", () => {
+            mediaRecorder.stop();
+            document.getElementById("startRecording").disabled = false;
+            document.getElementById("stopRecording").disabled = true;
+        });
+    </script>
+</body>
+</html>

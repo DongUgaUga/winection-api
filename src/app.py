@@ -11,6 +11,9 @@ from ws.ws_server import websocket_router
 from ws.slts.sentence import word_to_sentence
 from ws.slts.speech import text_to_speech
 
+from ws.stsl_server import stsl_router
+
+
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
 # FastAPI: 애플리케이션 초기화
@@ -31,6 +34,9 @@ app.add_middleware(
 
 # WebSocket: 웹소켓 통신 
 app.include_router(websocket_router)
+
+
+app.include_router(stsl_router)
 
 # 요청 데이터 모델 정의
 class TranslationRequest(BaseModel):

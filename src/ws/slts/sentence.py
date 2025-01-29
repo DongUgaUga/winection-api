@@ -2,18 +2,8 @@ from openai import OpenAI
 import os
 from dotenv import load_dotenv
 import logging
+from ws.keyload import DEEPSEEK_API_KEY
 
-# 환경변수 로드
-load_dotenv()
-
-# API 키 설정
-DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
-if not DEEPSEEK_API_KEY:
-    raise ValueError("환경변수 'DEEPSEEK_API_KEY'가 설정되지 않았습니다.")
-
-
-# OpenAI 클라이언트 초기화
-client = OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
 
 # DeepSeek API 호출 함수
 def word_to_sentence(words: list) -> str:

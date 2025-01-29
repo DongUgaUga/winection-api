@@ -4,21 +4,12 @@ import base64
 import os
 from dotenv import load_dotenv
 import logging
+from ws.keyload import GOOGLE_API_KEY, PROJECT_ID
 
-# 환경변수 로드
-load_dotenv()
-
-# API 키 설정
-GOOGLETTS_API_KEY = os.getenv("GOOGLETTS_API_KEY")
-if not GOOGLETTS_API_KEY:
-    raise ValueError("환경변수 'GOOGLETTS_API_KEY'가 설정되지 않았습니다.")
-
-# 프로젝트 ID
-PROJECT_ID = "winection-project"
 
 def text_to_speech(voice_name: str, text: str) -> str:
     try:
-        client = tts.TextToSpeechClient(client_options={"api_key": GOOGLETTS_API_KEY, "quota_project_id": PROJECT_ID})
+        client = tts.TextToSpeechClient(client_options={"api_key": GOOGLE_API_KEY, "quota_project_id": PROJECT_ID})
         language_code = "-".join(voice_name.split("-")[:2])
 
         # 텍스트 입력 설정
@@ -41,7 +32,6 @@ def text_to_speech(voice_name: str, text: str) -> str:
 
         # 오디오 데이터를 Base64로 인코딩하여 반환
         audio_base64 = base64.b64encode(response.audio_content).decode("utf-8")
-
         return audio_base64
 
     except Exception as e:
