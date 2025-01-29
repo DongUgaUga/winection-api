@@ -9,7 +9,8 @@ uvicorn src.app:app --host 0.0.0.0 --port 8000 --reload &
 # FastAPI PID 저장
 UVICORN_PID=$!
 
-# 테스트용 Python HTTP 서버 실행 (백그라운드)
+# 프론트 테스트 용
+# Python HTTP 서버 실행 (백그라운드)
 python3 -m http.server 8080 --bind 0.0.0.0 &
 
 # HTTP 서버 PID 저장
