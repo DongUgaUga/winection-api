@@ -6,10 +6,10 @@ sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 import logging
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException
-from slts.websocket_handler import websocket_router
 from pydantic import BaseModel
-from slts.sentence_builder.generate_sentence import generate_sentence
-from slts.sentence_builder.text_to_speech import text_to_speech
+from slts.run_slts import websocket_router
+from slts.sentence import word_to_sentence
+from slts.speech import text_to_speech
 
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
@@ -41,7 +41,7 @@ class TranslationRequest(BaseModel):
 async def translate(request: TranslationRequest):
     try:
         # DeepSeek API로 문장 변환
-        sentence = generate_sentence(request.words)
+        sentence = word_to_sentence(request.words)
         
         # Google TTS로 음성 변환 (Base64 인코딩된 MP3 반환)
         audio_base64 = text_to_speech("ko-KR-Wavenet-D", sentence)
