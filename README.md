@@ -77,22 +77,24 @@ http://<서버IP주소>:8080/test_frond/test.html
 /winection-api
     ├── src/
     │   ├── app.py                   # 서버 실행
-    │   ├── slts/                   
+    │   ├── slts/       
+    │   │   ├── sentence_builder                 
+    │   │   │   ├── generate_sentence.py    # 수어 단어 -> 문장 변환   
+    │   │   │   ├── text_to_speech.py       # 문장 텍스트 -> 음성 변환
     │   │   ├── __init__.py         
-    │   │   ├── websocket_handler.py # WebSocket 관련 기능
-    │   │   ├── hand_recognition.py  # 손 좌표 -> 수어 단어 변환
-    │   │   ├── sentence_builder.py  # 수어 단어 -> 문장 변환 (DeepSeek API)
+    │   │   ├── websocket_handler.py        # WebSocket 관련 기능
+    │   │   ├── hand_recognition.py         # 손 좌표 -> 수어 단어 변환
     │   ├── stsl/                   
     │   │   ├── __init__.py
-    │   │   ├── speech_to_text.py    # 음성 -> 텍스트 변환
-    │   │   ├── text_to_sign.py      # 텍스트 -> 수어 애니메이션 변환
+    │   │   ├── speech_to_text.py           # 음성 -> 텍스트 변환
+    │   │   ├── text_to_sign.py             # 텍스트 -> 수어 애니메이션 변환
     ├── test_front/                  
     │   ├── package-lock.json               
     │   ├── package.json                
-    │   ├── test.html                # 테스트용 프론트엔드
-    ├── .env                         # 환경변수 파일 (직접 추가)
+    │   ├── test.html                       # 테스트용 프론트엔드
+    ├── .env                                # 환경변수 파일 (직접 추가)
     ├── .gitignore                   
     ├── README.md                    
     ├── requirements.txt             
-    ├── run.sh                       # 실행 스크립트
+    ├── run.sh                              # 실행 스크립트
 ```
