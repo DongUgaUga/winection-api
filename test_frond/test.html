@@ -82,7 +82,7 @@
                         }
                         // WebSocket: 상대방 손 정보 업데이트
                         if (data.client_id === "peer") {
-                            peerHandInfo.innerText = JSON.stringify("상대방 손 정보: ") + JSON.stringify(data.hand_data || "[]");
+                            peerHandInfo.innerText = "상대방 손 정보: " + JSON.stringify(data.hand_data || "[]");
                         }
                     }
 
