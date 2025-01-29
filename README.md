@@ -76,7 +76,7 @@ http://<서버IP주소>:8080/test_frond/test.html
 ```
 /winection-api
     ├── src/
-    │   ├── app.py                   # 서버 실행
+    │   ├── app.py                          # 서버 실행
     │   ├── slts/       
     │   │   ├── sentence_builder                 
     │   │   │   ├── generate_sentence.py    # 수어 단어 -> 문장 변환   
