@@ -76,25 +76,26 @@ ipconfig
 ```
 /winection-api                   
     ├── README.md   
-    ├── front/                  
+    ├── front                  
     │   ├── package-lock.json               
     │   ├── package.json                
-    │   ├── rtc.html                    # 화상채팅 프론트엔드(테스트용)
-    │   └─── stsl.html                  # 단어 -> 문장 -> TTS 프론트엔드(테스트용)  
+    │   ├── rtc.html                        # 화상채팅 프론트엔드(테스트용)
+    │   └─── stsl.html                      # 단어 -> 문장 -> TTS 프론트엔드(테스트용)  
     ├── .gitignore   
     ├── requirements.txt  
-    ├── run.sh                          # 실행 스크립트   
-    └── src/       
-        ├── slts                             
-        │   ├── __init__.py                 
-        │   ├── sentence.py             # 수어 단어 -> 문장 변환
-        │   ├── speech.py               # 문장 텍스트 -> 음성 변환
-        │   ├── word.py                 # 손 좌표 -> 수어 단어 변환
-        │   └── ws_server.py            # WebSocket 관련 기능
-        └── stsl
-            ├── __init__.py
-            ├── sign.py                 # 텍스트 -> 손 좌표 변환
-            ├── word.py                # 음성 -> 텍스트 변환
-            ├── text.py                 # 음성 -> 텍스트 변환
-            └── ws_server.py            # WebSocket 관련 기능                
+    ├── run.sh                              # 실행 스크립트 
+    └── src                                  
+        ├── app.py                              
+        └── ws  
+            ├── run_ws.py                   # WebSocket 관련 기능      
+            ├── slts                             
+            │   ├── __init__.py                 
+            │   ├── sentence.py             # 수어 단어 -> 문장 변환
+            │   ├── speech.py               # 문장 텍스트 -> 음성 변환
+            │   ├── word.py                 # 손 좌표 -> 수어 단어 변환
+            └── sts
+                ├── __init__.py
+                ├── sign.py                 # 텍스트 -> 손 좌표 변환
+                ├── word.py                 # 음성 -> 텍스트 변환
+                └── text.py                 # 음성 -> 텍스트 변환               
 ```
