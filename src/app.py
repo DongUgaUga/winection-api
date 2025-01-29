@@ -7,7 +7,7 @@ import logging
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from ws.run_ws import websocket_router
+from ws.ws_server import websocket_router
 from ws.slts.sentence import word_to_sentence
 from ws.slts.speech import text_to_speech
 
