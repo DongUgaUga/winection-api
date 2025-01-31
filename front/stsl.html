@@ -3,65 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>STSL Translation Test</title>
+    <title>STT 변환 및 WebSocket 전송</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin: 50px;
-        }
-        input, button {
-            font-size: 16px;
-            margin: 10px;
-        }
-        #translatedText {
-            font-size: 20px;
-            font-weight: bold;
-            margin-top: 20px;
-        }
+        body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
+        button { font-size: 16px; margin: 10px; padding: 10px; }
+        p { font-size: 18px; margin-top: 20px; }
     </style>
 </head>
 <body>
-    <h2>STSL Translation Test</h2>
-    
-    <input type="text" id="inputWords" placeholder="단어 입력 (쉼표로 구분)">
-    <button onclick="translateText()">번역 및 음성 출력</button>
-
-    <p id="translatedText">번역된 문장:</p>
-    <audio id="audioPlayer" controls></audio>
+    <h2>Google STT 실시간 음성 인식</h2>
+    <button id="startRecognition">음성 인식 시작</button>
+    <button id="stopRecognition" disabled>음성 인식 중지</button>
+    <p>변환된 텍스트:</p>
+    <p id="transcript"></p>
 
     <script>
-        async function translateText() {
-            const inputField = document.getElementById("inputWords");
-            const words = inputField.value.split(",").map(word => word.trim());
-            
-            if (words.length === 0 || words[0] === "") {
-                alert("단어를 입력하세요!");
-                return;
-            }
+        let recognition;
+        let lastFinalTranscript = "";
+        const roomId = "test";  
+        const serverIP = "127.0.0.1";  
 
-            const response = await fetch("http://127.0.0.1:8000/translate", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ words: words })
+        let ws = new WebSocket(`ws://${serverIP}:8000/stsl/${roomId}`);
+
+        ws.onopen = () => {
+            console.log("WebSocket 연결 성공");
+        };
+
+        ws.onerror = (error) => {
+            console.error("WebSocket 오류:", error);
+        };
+
+        ws.onmessage = (event) => {
+            console.log("백엔드 응답:", event.data);
+        };
+
+        if (!('webkitSpeechRecognition' in window)) {
+            alert("이 브라우저는 음성 인식을 지원하지 않습니다. 크롬을 사용하세요.");
+        } else {
+            recognition = new webkitSpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = "ko-KR";
+
+            recognition.onstart = function () {
+                document.getElementById("startRecognition").disabled = true;
+                document.getElementById("stopRecognition").disabled = false;
+                console.log("음성 인식 시작됨");
+            };
+
+            recognition.onresult = function (event) {
+                let interimTranscript = "";
+                let newFinalTranscript = "";
+
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    if (event.results[i].isFinal) {
+                        newFinalTranscript = event.results[i][0].transcript.trim();
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
+                }
+
+                if (newFinalTranscript && newFinalTranscript !== lastFinalTranscript) {
+                    lastFinalTranscript = newFinalTranscript;
+                    document.getElementById("transcript").innerText = newFinalTranscript;
+                    ws.send(JSON.stringify({ text: newFinalTranscript }));
+                    console.log("STT 변환 결과:", newFinalTranscript);
+                }
+            };
+
+            recognition.onerror = function (event) {
+                console.error("음성 인식 오류:", event.error);
+            };
+
+            recognition.onend = function () {
+                document.getElementById("startRecognition").disabled = false;
+                document.getElementById("stopRecognition").disabled = true;
+                console.log("음성 인식 종료됨");
+            };
+
+            document.getElementById("startRecognition").addEventListener("click", () => {
+                recognition.start();
             });
 
-            if (!response.ok) {
-                alert("번역 요청 실패!");
-                return;
-            }
-
-            const data = await response.json();
-            document.getElementById("translatedText").innerText = "번역된 문장: " + data.translated_sentence;
-
-            // Base64 오디오 데이터 디코딩 및 재생
-            const audioBase64 = data.audio_base64;
-            const audioBlob = new Blob([Uint8Array.from(atob(audioBase64), c => c.charCodeAt(0))], { type: "audio/mp3" });
-            const audioUrl = URL.createObjectURL(audioBlob);
-
-            const audioPlayer = document.getElementById("audioPlayer");
-            audioPlayer.src = audioUrl;
-            audioPlayer.play();
+            document.getElementById("stopRecognition").addEventListener("click", () => {
+                recognition.stop();
+            });
         }
     </script>
 </body>

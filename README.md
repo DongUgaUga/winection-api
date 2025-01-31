@@ -8,6 +8,10 @@
 
 다른 GUI나 IDE를 사용하는 분들은 각자의 방법에 맞춰서 실행하면 됩니다.
 
+> 현재는 키 인증에 필요한 파일이 빠져있어 제대로 실행이 안된다.  
+> .env, secret/google-cloud-api-key.json을 넣어줘야한다.  
+> 필요한 사람은 프로젝트 노션 문서에 있으니 확인
+
 <br>
 
 ### 🔖 세팅
@@ -18,11 +22,13 @@ git clone https://github.com/DongUgaUga/winection-api.git
 
 # 레포지토리로 디렉터리 이동
 cd winection-api
+
+echo
 ````
 
 <br>
 
-### 🔖 백엔드 실행
+### 🔖 서버 실행
 
 ```bash
 # 실행 권한 부여
@@ -32,16 +38,7 @@ chmod +x run.sh
 ./run.sh  
 ```
 
-<br>
-
-### 🔖 프론트엔드 실행
-
-새로운 터미널을 실행
-```bash
-# test.html 실행(테스트용 프론트엔드)
-cd test_front
-python3 -m http.server 8080 --bind 0.0.0.0
-````
+서버 종료: `Ctrl`+`C`
 
 <br>
 
@@ -62,39 +59,49 @@ ipconfig
 
 ### 🔖 접속 방법 
 크롬 브라우저에 아래 URL을 입력하여 접속
-```
-http://<서버IP주소>:8080/test/test.html
-```
 
-다른 클라이언트로 동일한 방법으로 URL 접속
-> 현재는 NAT 처리를 안해서 동일한 NAT 환경(같은 WIFI 또는 같은 네트워크 환경)에서만 통신이 가능하다.
+> 화상채팅 테스트
+> ```
+> http://<서버IP주소>:8080/front/rtc.html
+> ```
+> 다른 클라이언트로 동일한 방법으로 URL 접속
+>>  현재는 NAT 처리를 안해서 동일한 NAT 환경(같은 WIFI 또는 같은 네트워크 환경)에서만 통신이 가능하다.
+
+<br>
+
+> SLTS (Sign Language-To-Speech) 과정 중 단어 -> 문장 -> TTS 테스트
+> ```
+> http://<서버IP주소>:8080/front/slts.html
+> ```
+
 
 <br>
 
 
 ## 📖 프로젝트 구조 개요
 ```
-/winection-api
-    ├── src/
-    │   ├── app.py                          # 서버 실행
-    │   ├── slts/       
-    │   │   ├── sentence_builder                 
-    │   │   │   ├── generate_sentence.py    # 수어 단어 -> 문장 변환   
-    │   │   │   ├── text_to_speech.py       # 문장 텍스트 -> 음성 변환
-    │   │   ├── __init__.py         
-    │   │   ├── websocket_handler.py        # WebSocket 관련 기능
-    │   │   ├── hand_recognition.py         # 손 좌표 -> 수어 단어 변환
-    │   ├── stsl/                   
-    │   │   ├── __init__.py
-    │   │   ├── speech_to_text.py           # 음성 -> 텍스트 변환
-    │   │   ├── text_to_sign.py             # 텍스트 -> 수어 애니메이션 변환
-    ├── test_front/                  
+/winection-api                   
+    ├── README.md   
+    ├── front                  
     │   ├── package-lock.json               
     │   ├── package.json                
-    │   ├── test.html                       # 테스트용 프론트엔드
-    ├── .env                                # 환경변수 파일 (직접 추가)
-    ├── .gitignore                   
-    ├── README.md                    
-    ├── requirements.txt             
-    ├── run.sh                              # 실행 스크립트
+    │   ├── rtc.html                        # 화상채팅 프론트엔드(테스트용)
+    │   └─── stsl.html                      # word -> sentence -> speech 프론트엔드(테스트용)  
+    ├── .gitignore   
+    ├── requirements.txt  
+    ├── run.sh                              # 실행 스크립트 
+    ├── secret
+    │   └── google-cloud-api-key.json       
+    └── src                                  
+        ├── app.py                              
+        └── ws  
+            ├── ws_server.py                # WebSocket 관련  
+            ├── stsl_server.py              # stsl WebSocket 관련    
+            ├── slts                             
+            │   ├── sentence.py             # 수어 단어 -> 문장 병합
+            │   ├── speech.py               # 문장 텍스트 -> 음성 변환
+            │   └── word.py                 # 손 좌표 -> 수어 단어 변환
+            └── stsl
+                ├── sign.py                 # 텍스트 -> 손 좌표 변환
+                └── word.py                 # 텍스트 -> 단어로 분할
 ```
