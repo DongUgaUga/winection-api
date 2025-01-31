@@ -22,7 +22,7 @@ cd winection-api
 
 > 현재는 키 인증에 필요한 파일이 빠져있어 제대로 실행이 안된다.  
 > .env을 넣어줘야한다.  
-> 필요한 사람은 프로젝트 노션 문서에 있으니 확인
+> 필요한 사람은 프로젝트 노션 문서에 있으니 확인  
 > https://www.notion.so/woodong222/API-Key-https-1896be62840280d9b79fca3e4bd44267?pvs=4
 
 <br>
