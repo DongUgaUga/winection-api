@@ -1,5 +1,6 @@
-# 기본생성파일
+# .gitignore
 .env
+secret/*
 .DS_Store
 .idea/*
 .venv/*
