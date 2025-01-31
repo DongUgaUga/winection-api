@@ -87,8 +87,9 @@ ipconfig
     ├── front                  
     │   ├── package-lock.json               
     │   ├── package.json                
-    │   ├── rtc.html                        # 화상채팅 프론트엔드(테스트용)
-    │   └─── stsl.html                      # word -> sentence -> speech 프론트엔드(테스트용)  
+    │   ├── slst.html                      # 화상채팅 프론트엔드(테스트용)
+    │   ├── ts.html                        # word -> sentence -> speech 프론트엔드(테스트용)  
+    │   └── stsl.html                      # stt(테스트용)  
     ├── .gitignore   
     ├── requirements.txt  
     ├── run.sh                              # 실행 스크립트 
