@@ -4,9 +4,11 @@ from dotenv import load_dotenv
 import logging
 from ws.keyload import DEEPSEEK_API_KEY
 
+client = OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
 
 # DeepSeek API 호출 함수
 def word_to_sentence(words: list) -> str:
+    print(DEEPSEEK_API_KEY)
     system_message = {
         "role": "system",
         "content": "너는 이제부터 수화를 번역할 거야. 내가 단어들을 던져주면 그걸 자연스러운 하나의 문장으로 만들어줘. 부가적인 설명은 하지 말고, 오로지 하나의 문장만 출력해."
