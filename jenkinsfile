@@ -2,34 +2,64 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = 'winection-api'   // Docker 이미지 이름
-        CONTAINER_NAME = 'api'           // 컨테이너 이름
-        REPO_URL = 'https://github.com/DongUgaUga/winection-api.git'
-        BRANCH = 'main'                  // 사용할 브랜치
+        DOCKER_IMAGE = 'woo204/winection-api'  // Docker Hub 이미지 경로
+        CONTAINER_NAME = 'api'  // 실행할 컨테이너 이름
+        DOCKER_CREDENTIALS_ID = 'woo'  // Jenkins의 Docker Hub 인증 ID
     }
 
     stages {
-        stage('Git Clone') {
+        stage('Checkout Code') {
             steps {
-                git branch: "${BRANCH}", url: "${REPO_URL}"
+                git branch: 'main', url: 'https://github.com/DongUgaUga/winection-api.git'
             }
         }
 
-        stage('Build') {
-            steps {
-                sh 'docker build -t ${DOCKER_IMAGE} .' // Docker 이미지 빌드
-                echo 'build success'
-            }
-        }
-
-        stage('Deploy') {
+        stage('Build Docker Image') {
             steps {
                 script {
-                    sh 'docker stop ${CONTAINER_NAME} || true'  // 기존 컨테이너 중지
-                    sh 'docker rm ${CONTAINER_NAME} || true'    // 기존 컨테이너 삭제
-                    sh 'docker run -d --name ${CONTAINER_NAME} -p 8000:8000 ${DOCKER_IMAGE}' // 컨테이너 실행
+                    withCredentials([
+                        string(credentialsId: 'GOOGLE_CLOUD_API_KEY', variable: 'GOOGLE_API_KEY'),
+                        string(credentialsId: 'DEEPSEEK_API_KEY', variable: 'DEEPSEEK_API_KEY')
+                    ]) {
+                        sh """
+                        docker build --build-arg GOOGLE_API_KEY=${GOOGLE_API_KEY} \
+                                     --build-arg DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY} \
+                                     -t ${DOCKER_IMAGE}:latest .
+                        """
+                    }
                 }
-                echo 'Deployment success'
+            }
+        }
+
+        stage('Push to Docker Hub') {
+            steps {
+                script {
+                    withDockerRegistry([credentialsId: "${DOCKER_CREDENTIALS_ID}"]) {
+                        sh "docker push ${DOCKER_IMAGE}:latest"
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to Server') {
+            steps {
+                script {
+                    withCredentials([
+                        string(credentialsId: 'GOOGLE_CLOUD_API_KEY', variable: 'GOOGLE_API_KEY'),
+                        string(credentialsId: 'DEEPSEEK_API_KEY', variable: 'DEEPSEEK_API_KEY')
+                    ]) {
+                        sh """
+                        docker stop ${CONTAINER_NAME} || true
+                        docker rm ${CONTAINER_NAME} || true
+                        docker pull ${DOCKER_IMAGE}:latest
+                        docker run -d --name ${CONTAINER_NAME} -p 8000:8000 \
+                                   -e GOOGLE_CLOUD_API_KEY=${GOOGLE_API_KEY} \
+                                   -e DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY} \
+                                   ${DOCKER_IMAGE}:latest
+                        """
+                    }
+                }
+                echo '🚀 Deployment success!'
             }
         }
     }

@@ -1,6 +1,5 @@
 # .gitignore
 .env
-secret/*
 .DS_Store
 .idea/*
 .venv/*
