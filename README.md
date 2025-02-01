@@ -99,10 +99,12 @@ python3 -m http.server 8080 --bind 0.0.0.0
                 └── word.py                 # 텍스트 -> 단어로 분할
 ```
 
-## docker
+## Docker
 ```bash
 docker buildx create --use
 docker buildx ls
 
 docker buildx build --platform linux/amd64,linux/arm64 -t woo204/winection-api:0.0.1 --push .
 ```
+
+## Jenkins
