@@ -2,7 +2,7 @@ from openai import OpenAI
 import os
 from dotenv import load_dotenv
 import logging
-from ws.keyload import DEEPSEEK_API_KEY
+from ws.load import DEEPSEEK_API_KEY
 
 client = OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
 

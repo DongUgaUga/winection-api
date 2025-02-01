@@ -22,6 +22,7 @@
     <p id="peerHandInfo"></p>
 
     <script>
+        let serverIP = "218.150.182.161"; // 서버 IP주소
         // WebSocket: 방 번호 입력 및 연결 설정
         let roomId = prompt("참여할 방 번호를 입력하세요 (예: room1)");
 
@@ -33,7 +34,6 @@
         const peerStatus = document.getElementById("peerStatus");
 
         // WebSocket: 서버와 연결 설정
-        let serverIP = "192.168.1.8"; // API 서버 IP주소
         let ws; // WebSocket 객체
         let reconnectAttempts = 0; // 재연결 시도 횟수
         const maxReconnectAttempts = 5; // 최대 재연결 시도 횟수

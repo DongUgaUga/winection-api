@@ -10,9 +10,9 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 rooms = {}
 
 # FastAPI 라우터 생성
-websocket_router = APIRouter()
+slts_router = APIRouter()
 
-@websocket_router.websocket("/ws/{room_id}")
+@slts_router.websocket("/ws/{room_id}")
 async def websocket_endpoint(websocket: WebSocket, room_id: str):
     try:
         # WebSocket: 연결 수락

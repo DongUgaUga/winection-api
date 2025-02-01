@@ -1,0 +1,8 @@
+.DS_Store
+.idea/*
+.venv/*
+.gititnore
+README.md
+run.sh
+*/node_modules/
+front/

@@ -41,18 +41,8 @@ chmod +x run.sh
 
 <br>
 
-### 🔖 웹 실행
-./run.sh을 실행시킨 서버의 IP주소 카피
-
-**Mac/Linux OS**
 ```bash
-ifconfig | grep "inet " | grep -v 127.0.0.1`
-```
-
-**Window OS**
-```bash
-## 자신이 사용하고 있는 인터넷 환경(이더넷, WIFI 등)의 IPv4 Address 카피
-ipconfig 
+python3 -m http.server 8080 --bind 0.0.0.0
 ```
 <br>
 
@@ -61,13 +51,13 @@ ipconfig
 
 > 화상채팅 테스트
 > ```
-> http://<서버IP주소>:8080/front/rtc.html
+> http://<서버IP주소>:8080/front/rtc.html (`127.0.0.1:8080`을 대신 입력해도 되지만 webRTC를 통한 통신은 수행 불가능)
 > ```
 > 다른 클라이언트로 동일한 방법으로 URL 접속
 >>  현재는 NAT 처리를 안해서 동일한 NAT 환경(같은 WIFI 또는 같은 네트워크 환경)에서만 통신이 가능하다.  
 >> chrome://flags/#unsafely-treat-insecure-origin-as-secure에서 세팅을 해줘야 웹캠, 마이크 가능  
 >> 참고링크: https://velog.io/@juna-dev/navigator.mediaDevices-undefined-%ED%95%B4%EA%B2%B0  
->> 위의 링크에서 <IP주소>:8080 입력
+>> 위의 링크에서 `<IP주소>:8080` 입력
 
 <br>
 
@@ -107,4 +97,12 @@ ipconfig
             └── stsl
                 ├── sign.py                 # 텍스트 -> 손 좌표 변환
                 └── word.py                 # 텍스트 -> 단어로 분할
+```
+
+## docker
+```bash
+docker buildx create --use
+docker buildx ls
+
+docker buildx build --platform linux/amd64,linux/arm64 -t woo204/winection-api:0.0.1 --push .
 ```

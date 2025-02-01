@@ -18,10 +18,10 @@
     <p id="transcript"></p>
 
     <script>
+        const serverIP = "218.150.182.161";  
         let recognition;
         let lastFinalTranscript = "";
         const roomId = "test";  
-        const serverIP = "127.0.0.1";  
 
         let ws = new WebSocket(`ws://${serverIP}:8000/stsl/${roomId}`);
 

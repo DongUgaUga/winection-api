@@ -4,7 +4,7 @@ import base64
 import os
 from dotenv import load_dotenv
 import logging
-from ws.keyload import GOOGLE_API_KEY, PROJECT_ID
+from ws.load import GOOGLE_API_KEY, PROJECT_ID
 
 # 프로젝트 ID
 PROJECT_ID = "winection-project"
