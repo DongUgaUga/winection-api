@@ -109,3 +109,4 @@ docker buildx build --platform linux/amd64,linux/arm64 -t woo204/winection-api:0
 
 ## Jenkins
 > 현재 진행중
+> ci cd 배포중
