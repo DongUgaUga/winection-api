@@ -101,11 +101,5 @@ python3 -m http.server 8080 --bind 0.0.0.0
 
 ## Docker
 ```bash
-docker buildx create --use
-docker buildx ls
-
-docker buildx build --platform linux/amd64,linux/arm64 -t woo204/winection-api:0.0.1 --push .
+./deploy.sh
 ```
-
-## Jenkins
-> 현재 진행중 (안될 가능성 있음)
