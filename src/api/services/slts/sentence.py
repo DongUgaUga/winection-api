@@ -1,8 +1,8 @@
 from openai import OpenAI
 import os
 from dotenv import load_dotenv
-import logging
-from ws.load import DEEPSEEK_API_KEY
+from core.logging import logger
+from core.config import DEEPSEEK_API_KEY
 
 client = OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
 
@@ -25,5 +25,5 @@ def word_to_sentence(words: list) -> str:
         )
         return response.choices[0].message.content
     except Exception as e:
-        logging.exception(f"[DeepSeek] API 호출 중 오류 발생: {str(e)}")
+        logger.exception(f"[DeepSeek] API 호출 중 오류 발생: {str(e)}")
         raise RuntimeError(f"DeepSeek API 호출 중 오류 발생: {str(e)}")

@@ -3,11 +3,8 @@ import google.cloud.texttospeech as tts
 import base64
 import os
 from dotenv import load_dotenv
-import logging
-from ws.load import GOOGLE_API_KEY, PROJECT_ID
-
-# 프로젝트 ID
-PROJECT_ID = "winection-project"
+from core.logging import logger
+from core.config import GOOGLE_API_KEY, PROJECT_ID
 
 def text_to_speech(voice_name: str, text: str) -> str:
     try:
@@ -38,5 +35,5 @@ def text_to_speech(voice_name: str, text: str) -> str:
         return audio_base64
 
     except Exception as e:
-        logging.exception(f"[Google TTS] 음성 변환 중 오류 발생: {str(e)}")
+        logger.exception(f"[Google TTS] 음성 변환 중 오류 발생: {str(e)}")
         raise RuntimeError(f"Google TTS 음성 변환 중 오류 발생: {str(e)}")
