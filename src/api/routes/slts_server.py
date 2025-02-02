@@ -1,22 +1,19 @@
-# 클라이언트와 WebSocket 통신
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from core.models import WebSocketMessage
 import json
 from core.logging import logger
 
-# WebSocket: 방 정보를 저장
+# WebSocket 연결을 관리할 방(room) 딕셔너리
 rooms = {}
 
-# FastAPI 라우터 생성
 slts_router = APIRouter()
 
 @slts_router.websocket("/ws/{room_id}")
 async def websocket_endpoint(websocket: WebSocket, room_id: str):
     try:
-        # WebSocket: 연결 수락
         await websocket.accept()
         logger.info(f"Client가 Room:[{room_id}]에 접속했습니다.")
 
-        # 방에 클라이언트 추가
         if room_id not in rooms:
             rooms[room_id] = []
         rooms[room_id].append(websocket)
@@ -26,46 +23,44 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
                 # WebSocket: 데이터 수신
                 data = await websocket.receive_text()
                 try:
-                    data_json = json.loads(data)
-                except json.JSONDecodeError:
-                    logger.error(f"Room:[{room_id}] - 잘못된 JSON 형식 데이터 수신")
-                    continue
+                    message = WebSocketMessage.parse_raw(data)
+                except Exception as e:
+                    logger.error(f"Room:[{room_id}] - 잘못된 WebSocket 메시지 수신: {e}")
+                    continue  # 잘못된 데이터 무시하고 다음 메시지 처리
 
-                # WebRTC: 시그널링 데이터 처리
-                if "offer" in data_json or "answer" in data_json or "candidate" in data_json:
-                    for ws in list(rooms[room_id]):  # 안전한 복사를 위해 리스트로 변환
+                # WebRTC 시그널링 데이터 처리
+                if message.type in ["offer", "answer", "candidate"]:
+                    for ws in list(rooms.get(room_id, [])):
                         if ws != websocket:
                             try:
-                                await ws.send_text(json.dumps(data_json))
+                                await ws.send_text(message.json())
                             except Exception as e:
                                 logger.error(f"Room:[{room_id}] - WebRTC 시그널 전송 중 오류 발생: {e}")
-                                if "WebSocket is not connected." in str(e):
-                                    await websocket.accept()
+                                rooms[room_id].remove(ws)
 
                 # 손 좌표 데이터 처리
-                elif "hand_data" in data_json:
-                    for ws in list(rooms[room_id]):
+                elif message.type == "hand_data":
+                    hand_data = message.data if isinstance(message.data, dict) else {}
+                    for ws in list(rooms.get(room_id, [])):
                         try:
-                            if ws != websocket:
-                                await ws.send_json({"client_id": "peer", "hand_data": data_json["hand_data"]})
-                            else:
-                                await ws.send_json({"client_id": "self", "hand_data": data_json["hand_data"]})
+                            await ws.send_json({
+                                "client_id": "peer" if ws != websocket else "self",
+                                "hand_data": hand_data
+                            })
                         except Exception as e:
                             logger.error(f"Room:[{room_id}] - 손 좌표 데이터 전송 중 오류 발생: {e}")
-                            if "WebSocket is not connected." in str(e):
-                                await websocket.accept()
+                            rooms[room_id].remove(ws)
 
             except WebSocketDisconnect:
                 logger.info(f"Client가 Room:[{room_id}]에서 나갔습니다.")
                 if websocket in rooms.get(room_id, []):
                     rooms[room_id].remove(websocket)
-                    if not rooms[room_id]:
+                    if not rooms[room_id]:  # 방에 아무도 없으면 삭제
                         del rooms[room_id]
                 break
             except Exception as e:
                 logger.error(f"Room:[{room_id}] - 데이터 처리 중 오류 발생: {e}")
-                if "WebSocket is not connected." in str(e):
-                    await websocket.accept()
+                continue  # 오류 발생 시 해당 클라이언트 무시
 
     except WebSocketDisconnect:
         logger.info(f"Client가 Room:[{room_id}]에서 나갔습니다.")
@@ -75,6 +70,7 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
             del rooms[room_id]
     except Exception as e:
         logger.error(f"WebSocket 연결 처리 중 오류 발생: {e}")
-        rooms[room_id].remove(websocket)
-        if not rooms[room_id]:
-            del rooms[room_id]
+        if room_id in rooms and websocket in rooms[room_id]:
+            rooms[room_id].remove(websocket)
+            if not rooms[room_id]:
+                del rooms[room_id]

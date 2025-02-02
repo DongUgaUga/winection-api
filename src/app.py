@@ -1,8 +1,10 @@
 import sys
 import os
 
-# ✅ src 폴더를 Python 패키지로 인식하도록 설정
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+SRC_DIR = os.path.abspath(os.path.join(BASE_DIR))
+sys.path.append(SRC_DIR)
+
 
 import logging
 from fastapi.middleware.cors import CORSMiddleware
