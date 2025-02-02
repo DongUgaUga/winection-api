@@ -73,33 +73,45 @@ python3 -m http.server 8080 --bind 0.0.0.0
 ## 📖 프로젝트 구조 개요
 ```
 /winection-api                   
-    ├── README.md   
-    ├── front                  
-    │   ├── package-lock.json               
-    │   ├── package.json                
-    │   ├── slst.html                      # 화상채팅 프론트엔드(테스트용)
-    │   ├── ts.html                        # word -> sentence -> speech 프론트엔드(테스트용)  
-    │   └── stsl.html                      # stt(테스트용)  
-    ├── .gitignore   
-    ├── requirements.txt  
-    ├── run.sh                              # 실행 스크립트 
-    ├── secret
-    │   └── google-cloud-api-key.json       
-    └── src                                  
-        ├── app.py                              
-        └── ws  
-            ├── ws_server.py                # WebSocket 관련  
-            ├── stsl_server.py              # stsl WebSocket 관련    
-            ├── slts                             
-            │   ├── sentence.py             # 수어 단어 -> 문장 병합
-            │   ├── speech.py               # 문장 텍스트 -> 음성 변환
-            │   └── word.py                 # 손 좌표 -> 수어 단어 변환
-            └── stsl
-                ├── sign.py                 # 텍스트 -> 손 좌표 변환
-                └── word.py                 # 텍스트 -> 단어로 분할
+├── Dockerfile
+├── README.md
+├── deploy.sh
+├── logs
+│   └── winection-api.log
+├── requirements.txt
+└── src
+    ├── api
+    │   ├── routes
+    │   │   ├── slts_server.py
+    │   │   └── stsl_server.py
+    │   └── services
+    │       ├── login
+    │       │   ├── auth.py
+    │       │   └── login.py
+    │       ├── slts
+    │       │   ├── sentence.py
+    │       │   ├── speech.py
+    │       │   └── word.py
+    │       └── stsl
+    │           ├── sign.py
+    │           └── word.py
+    ├── app.py
+    ├── core
+    │   ├── config.py
+    │   ├── logging.py
+    │   └── models.py
+    └── resources
+        ├── db
+        └── templates
+            ├── config.js
+            ├── package-lock.json
+            ├── package.json
+            ├── slts.html
+            ├── stsl.html
+            └── ts.html
 ```
 
-## Docker
+## 서버 배포
 ```bash
 ./deploy.sh
 ```

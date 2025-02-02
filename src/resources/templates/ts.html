@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>STSL Translation Test</title>
-    <script src="config.js"></script>
+    <script src="../static/config.js"></script>
+
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -32,8 +33,6 @@
     <audio id="audioPlayer" controls></audio>
 
     <script>
-        const serverIP = "config.js"; 
-
         async function translateText() {
             const inputField = document.getElementById("inputWords");
             const words = inputField.value.split(",").map(word => word.trim());
@@ -43,7 +42,7 @@
                 return;
             }
 
-            const response = await fetch("http://${serverIP}:8000/translate", {
+            const response = await fetch("http://${serverURL}/translate", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ words: words })

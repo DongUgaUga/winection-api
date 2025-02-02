@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>STT 변환 및 WebSocket 전송</title>
-    <script src="config.js"></script>
+    <script src="../static/config.js"></script>
+
     <style>
         body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
         button { font-size: 16px; margin: 10px; padding: 10px; }
@@ -18,13 +19,12 @@
     <p>변환된 텍스트:</p>
     <p id="transcript"></p>
 
-    <script>
-        const serverIP = "218.150.182.161";  
+    <script>  
         let recognition;
         let lastFinalTranscript = "";
         const roomId = "test";  
 
-        let ws = new WebSocket(`ws://${serverIP}:8000/stsl/${roomId}`);
+        let ws = new WebSocket(`ws://${serverURL}/stsl/${roomId}`);
 
         ws.onopen = () => {
             console.log("WebSocket 연결 성공");

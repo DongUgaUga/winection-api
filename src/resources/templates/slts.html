@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>1:1 화상채팅 및 손 인식</title>
-    <script src="config.js"></script>
+    <script src="../static/config.js"></script>
 
     <!-- MediaPipe: 라이브러리 로드 -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands"></script>
@@ -23,7 +23,6 @@
     <p id="peerHandInfo"></p>
 
     <script>
-        let serverIP = "218.150.182.161"; // 서버 IP주소
         // WebSocket: 방 번호 입력 및 연결 설정
         let roomId = prompt("참여할 방 번호를 입력하세요 (예: room1)");
 
@@ -50,7 +49,7 @@
 
         // WebSocket: 연결 함수
         function connectWebSocket() {
-            ws = new WebSocket(`ws://${serverIP}:8000/ws/${roomId}`);
+            ws = new WebSocket(`ws://${serverURL}/ws/${roomId}`);
 
             // WebSocket: 메시지 수신 처리
             ws.onmessage = async (event) => {
