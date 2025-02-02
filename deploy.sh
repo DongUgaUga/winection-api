@@ -14,8 +14,8 @@ REMOTE_PORT="20831"
 
 REMOTE_COMMANDS="
 echo '🛠️ 기존 컨테이너 정리 중...'
-docker stop api || true > /dev/null
-docker rm api || true > /dev/null
+(docker stop api || true) > /dev/null
+(docker rm api || true) > /dev/null
 
 echo '🐳 Docker 데몬 상태 확인...'
 if ! systemctl is-active --quiet docker; then
