@@ -23,13 +23,25 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
                 # WebSocket: 데이터 수신
                 data = await websocket.receive_text()
                 try:
-                    message = WebSocketMessage.parse_raw(data)
+                    parsed_data = json.loads(data)  # JSON 파싱
+                    message_type = parsed_data.get("type", {})
+                    # hand_type = parsed_data.get("data", {}).get("hand_data", [])[0]["hand_type"]
+                    message_data = parsed_data.get("data", {})
+                    # hand_data = message_data['hand_data']
+
+                    message = WebSocketMessage(type=message_type, data=message_data)
+
                 except Exception as e:
                     logger.error(f"Room:[{room_id}] - 잘못된 WebSocket 메시지 수신: {e}")
                     continue  # 잘못된 데이터 무시하고 다음 메시지 처리
 
+                
+                # logger.info(f"수신 메시지: {parsed_data}, 손 타입: {message_type}, 손 좌표: {message_data['hand_data']}")
+                # logger.info(f"Room:[{room_id}] - 수신 메시지: {message.json()}")
+                # logger.info(f"{message.type}")
                 # WebRTC 시그널링 데이터 처리
                 if message.type in ["offer", "answer", "candidate"]:
+                    # logger.info(f"Room:[{room_id}] - WebRTC 메시지 수신: {message.type}")
                     for ws in list(rooms.get(room_id, [])):
                         if ws != websocket:
                             try:
@@ -47,6 +59,8 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
                                 "client_id": "peer" if ws != websocket else "self",
                                 "hand_data": hand_data
                             })
+                            
+                            # logger.info(f"{hand_data}")
                         except Exception as e:
                             logger.error(f"Room:[{room_id}] - 손 좌표 데이터 전송 중 오류 발생: {e}")
                             rooms[room_id].remove(ws)

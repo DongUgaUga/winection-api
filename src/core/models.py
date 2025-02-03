@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Any
 
 # STSL API
 class TranslationRequest(BaseModel):
@@ -13,7 +13,7 @@ class TranslationResponse(BaseModel):
 # WebSocket 메시지 구조
 class WebSocketMessage(BaseModel):
     type: str
-    data: dict
+    data: dict[str, Any]
 
 # 로그인 API (추후 추가)
 class LoginRequest(BaseModel):

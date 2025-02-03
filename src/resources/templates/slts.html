@@ -55,38 +55,42 @@
             ws.onmessage = async (event) => {
                 try {
                     const data = JSON.parse(event.data);
-
-                    // WebRTC: Offer 수신 처리
-                    if (data.offer) {
-                        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+            
+                    // WebRTC Offer 수신 처리
+                    if (data.type === "offer") {
+                        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.data));
                         const answer = await peerConnection.createAnswer();
                         await peerConnection.setLocalDescription(answer);
-                        ws.send(JSON.stringify({ answer: answer }));
+                        ws.send(JSON.stringify({ type: "answer", data: answer }));
+                    }
+            
+                    // WebRTC Answer 수신 처리
+                    if (data.type === "answer") {
+                        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.data));
+                    }
+            
+                    // WebRTC ICE Candidate 수신 처리
+                    if (data.type === "candidate") {
+                        await peerConnection.addIceCandidate(new RTCIceCandidate(data.data));
                     }
 
-                    // WebRTC: Answer 수신 처리
-                    if (data.answer) {
-                        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
-                    }
-
-                    // WebRTC: ICE Candidate 수신 처리
-                    if (data.candidate) {
-                        await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
-                    }
-
+            
+                    // console.log(`손 정보 수신: ${JSON.stringify(data)}`);
+                    // myHandInfo.innerText = JSON.stringify(handData);
                     // WebSocket: 손 좌표 데이터 수신 처리
+                    //if (data.type === "hand_data") {
                     if (data.hand_data) {
-                        // WebSocket: 내 손 정보 업데이트
+                        // 내 손 정보 업데이트
                         if (data.client_id === "self") {
-                            myHandInfo.innerText = JSON.stringify(data.hand_data || "[]");
+                            myHandInfo.innerText = JSON.stringify(data.hand_data.hand_data);
                         }
-                        // WebSocket: 상대방 손 정보 업데이트
-                        if (data.client_id === "peer") {
-                            peerHandInfo.innerText = "상대방 손 정보: " + JSON.stringify(data.hand_data || "[]");
+                        // 상대방 손 정보 업데이트
+                        else if (data.client_id === "peer") {
+                            peerHandInfo.innerText = "상대방 손 정보: " + JSON.stringify(data.hand_data.hand_data);
                         }
                     }
-
-                    // WebSocket: 상대방 연결 상태 업데이트
+            
+                    // 상대방 연결 상태 업데이트
                     if (data.client_id === "peer") {
                         peerConnected = true;
                         peerStatus.innerText = "통신 중입니다.";
@@ -96,6 +100,7 @@
                     console.error("WebSocket 메시지 처리 중 오류 발생:", error);
                 }
             };
+            
 
             // WebSocket: 연결 성공 시 호출
             ws.onopen = () => {
@@ -150,7 +155,14 @@
                     // WebRTC: Offer 생성 및 송신
                     peerConnection.createOffer()
                         .then(offer => peerConnection.setLocalDescription(offer))
-                        .then(() => ws.send(JSON.stringify({ offer: peerConnection.localDescription })));
+                        .then(() => ws.send(JSON.stringify({ type: "offer", data: peerConnection.localDescription })));  // ✅ "type" 필드 추가
+
+                    // ICE Candidate 메시지 전송 시 type 추가
+                    peerConnection.onicecandidate = (event) => {
+                        if (event.candidate) {
+                            ws.send(JSON.stringify({ type: "candidate", data: event.candidate }));  // ✅ "type" 필드 추가
+                        }
+                    };
 
                     // MediaPipe: 손 좌표 추출
                     const hands = new Hands({
@@ -177,11 +189,17 @@
                         if (results.multiHandLandmarks && results.multiHandedness) {
                             const handData = results.multiHandLandmarks.map((landmark, index) => ({
                                 hand_type: results.multiHandedness[index].label === "Right" ? "왼손" : "오른손",
-                                x: landmark[0].x.toFixed(2),
-                                y: landmark[0].y.toFixed(2),
-                                z: landmark[0].z.toFixed(2)
+                                x: parseFloat(landmark[0].x.toFixed(2)),
+                                y: parseFloat(landmark[0].y.toFixed(2)),
+                                z: parseFloat(landmark[0].z.toFixed(2))
                             }));
-                            ws.send(JSON.stringify({ hand_data: handData }));
+
+                            if (handData.length === 0) return;
+
+                            ws.send(JSON.stringify({
+                                type: "hand_data",
+                                data: { hand_data: handData }
+                            }));
                         }
                     });
                 })
