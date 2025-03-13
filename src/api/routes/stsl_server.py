@@ -2,6 +2,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from core.models import WebSocketMessage
 import json
 from core.logging import logger
+from api.services.stsl.word import text_to_word
 
 # WebSocket 연결을 관리할 방(room) 딕셔너리
 rooms = {}
@@ -31,6 +32,9 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
                 received_text = str(message.data.get("text", ""))
                 logger.info(f"[STT 수신] Room:[{room_id}] - {received_text}")
 
+                word_list = text_to_word(received_text)
+                logger.info(f"[변환된 단어] Room:[{room_id}] - {word_list}")
+                
                 # 현재 방에 있는 모든 클라이언트에게 전송 (Broadcast 가능)
                 for ws in list(rooms.get(room_id, [])):
                     try:
