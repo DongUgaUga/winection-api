@@ -12,12 +12,19 @@ pipeline {
         stage('Start Notification') {
             steps {
                 script {
-                    discordSend description: "젠킨스 배포를 시작합니다!", 
-                        link: env.BUILD_URL, 
-                        title: "${env.JOB_NAME} : ${currentBuild.displayName} 시작", 
-                        webhookURL: env.DISCORD,
-                        color: 3557003,
-                        embed: true
+                    def payload = """{
+                        "embeds": [{
+                            "title": "🔵 젠킨스 빌드 시작",
+                            "description": "젠킨스 배포를 시작합니다!",
+                            "color": 3447003,  // 🔵 파란색 (#3498db)
+                            "footer": { "text": "빌드 번호: #${currentBuild.number}" }
+                        }]
+                    }"""
+                    
+                    httpRequest httpMode: 'POST',
+                        url: env.DISCORD,
+                        contentType: 'APPLICATION_JSON',
+                        requestBody: payload
                 }
             }
         }
