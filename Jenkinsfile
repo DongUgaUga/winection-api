@@ -14,15 +14,22 @@ pipeline {
             }
         }
 
+        stage('Setup') {
+            steps {
+                script {
+                    sh '''
+                    echo "DEEPSEEK_API_KEY=$DEEPSEEK_API_KEY" > .env
+                    echo "GOOGLE_CLOUD_API_KEY=$GOOGLE_CLOUD_API_KEY" >> .env
+                    echo "PROJECT_ID=$PROJECT_ID" >> .env
+                    chmod 600 .env
+                    '''
+                }
+            }
+        }
+
         stage('Deploy') {
             steps {
                 script {
-                    sh """
-                    echo 'DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}' > .env
-                    echo 'GOOGLE_CLOUD_API_KEY=${GOOGLE_CLOUD_API_KEY}' >> .env
-                    echo 'PROJECT_ID=${PROJECT_ID}' >> .env
-                    """
-
                     sh "docker-compose down"
                     sh "docker-compose up -d --build api"
                 }
