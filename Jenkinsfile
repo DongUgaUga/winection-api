@@ -12,8 +12,7 @@ pipeline {
         stage('Start Notification') {
             steps {
                 script {
-                    discordSend description: "🚀 젠킨스 배포를 시작합니다!", 
-                        footer: "빌드 진행 중...", 
+                    discordSend description: "젠킨스 배포를 시작합니다!", 
                         link: env.BUILD_URL, 
                         title: "젠킨스 빌드 시작", 
                         webhookURL: env.DISCORD
@@ -52,19 +51,27 @@ pipeline {
 
     post {
         success {
-            discordSend description: "젠킨스 배포 완료!", 
-                footer: "빌드 성공!", 
-                link: env.BUILD_URL, result: currentBuild.currentResult, 
-                title: "서버 배포 성공", 
-                webhookURL: env.DISCORD
+            discordSend description: """
+                        제목 : ${currentBuild.displayName}
+                        결과 : ${currentBuild.result}
+                        실행 시간 : ${currentBuild.duration / 1000}s
+                        """, 
+                    footer: "빌드 성공!", 
+                    link: env.BUILD_URL, result: currentBuild.currentResult, 
+                    title: "${env.JOB_NAME} : ${currentBuild.displayName} 성공", 
+                    webhookURL: env.DISCORD
         }
         failure {
             script {
                 def logs = currentBuild.rawBuild.join("\n")
-                discordSend description: "젠킨스 빌드 실패", 
+                discordSend description: """
+                        제목 : ${currentBuild.displayName}
+                        결과 : ${currentBuild.result}
+                        실행 시간 : ${currentBuild.duration / 1000}s
+                        """, 
                     footer: "⚠️ 빌드 실패 로그 ⚠️\n```\n${logs}\n```", 
                     link: env.BUILD_URL, result: currentBuild.currentResult, 
-                    title: "서버 배포 실패", 
+                    title: "${env.JOB_NAME} : ${currentBuild.displayName} 실패", 
                     webhookURL: env.DISCORD
             }
         }
