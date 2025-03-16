@@ -15,9 +15,7 @@ pipeline {
                     discordSend description: "젠킨스 배포를 시작합니다!", 
                         link: env.BUILD_URL, 
                         title: "${env.JOB_NAME} : ${currentBuild.displayName} 시작", 
-                        webhookURL: env.DISCORD,
-                        color: 3557003,
-                        embed: true
+                        webhookURL: env.DISCORD
                 }
             }
         }
