@@ -8,27 +8,19 @@ pipeline {
         DISCORD = credentials('discord_webhook')
     }
 
-    post {
-            success {
-                discordSend description: "젠킨스 배포 완료!", 
-                    footer: "빌드가 성공했습니다.", 
-                    link: env.BUILD_URL, result: currentBuild.currentResult, 
-                    title: "서버 배포 성공", 
-                    webhookURL: env.DISCORD
-            }
-            failure {
-                script {
-                    def logs = currentBuild.rawBuild.join("\n")
-                    discordSend description: "젠킨스 빌드 실패", 
-                        footer: "⚠️ 빌드가 실패했습니다. ⚠️\n```\n${logs}\n```", 
-                        link: env.BUILD_URL, result: currentBuild.currentResult, 
-                        title: "서버 배포 실패", 
-                        webhookURL: env.DISCORD
-        }
-    }
-    }
-
     stages {
+        stage('Start Notification') {
+            steps {
+                script {
+                    discordSend description: "🚀 젠킨스 배포를 시작합니다!", 
+                        footer: "빌드 진행 중...", 
+                        link: env.BUILD_URL, 
+                        title: "젠킨스 빌드 시작", 
+                        webhookURL: env.DISCORD
+                }
+            }
+        }
+
         stage('Checkout') {
             steps {
                 git branch: 'main', credentialsId: 'github_token', url: 'https://github.com/DongUgaUga/winection-api.git'
@@ -54,6 +46,26 @@ pipeline {
                     sh "docker-compose down"
                     sh "docker-compose up -d --build api"
                 }
+            }
+        }
+    }
+
+    post {
+        success {
+            discordSend description: "젠킨스 배포 완료!", 
+                footer: "빌드 성공!", 
+                link: env.BUILD_URL, result: currentBuild.currentResult, 
+                title: "서버 배포 성공", 
+                webhookURL: env.DISCORD
+        }
+        failure {
+            script {
+                def logs = currentBuild.rawBuild.join("\n")
+                discordSend description: "젠킨스 빌드 실패", 
+                    footer: "⚠️ 빌드 실패 로그 ⚠️\n```\n${logs}\n```", 
+                    link: env.BUILD_URL, result: currentBuild.currentResult, 
+                    title: "서버 배포 실패", 
+                    webhookURL: env.DISCORD
             }
         }
     }
