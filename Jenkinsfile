@@ -8,10 +8,27 @@ pipeline {
         DISCORD = credentials('discord_webhook')
     }
 
+    post {
+            success {
+                discordSend description: "알림테스트", 
+                    footer: "빌드가 성공했습니다.", 
+                    link: env.BUILD_URL, result: currentBuild.currentResult, 
+                    title: "테스트 젠킨스 job", 
+                    webhookURL: env.DISCORD
+            }
+            failure {
+                discordSend description: "알림테스트", 
+                    footer: "빌드가 실패했습니다.", 
+                    link: env.BUILD_URL, result: currentBuild.currentResult, 
+                    title: "테스트 젠킨스 job", 
+                    webhookURL: env.DISCORD
+            }
+    }
+
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/DongUgaUga/winection-api.git'
+                git branch: 'main', credentialsId: 'github_token', url: 'https://github.com/DongUgaUga/winection-api.git'
             }
         }
 
