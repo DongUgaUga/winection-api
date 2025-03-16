@@ -23,6 +23,7 @@ pipeline {
                     title: "테스트 젠킨스 job", 
                     webhookURL: env.DISCORD
             }
+    }
 
     stages {
         stage('Checkout') {
