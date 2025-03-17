@@ -39,7 +39,7 @@ app.include_router(stsl_router)
 # 요청 데이터 모델 정의 (삭제됨 - core/models.py에서 관리)
 
 # FastAPI: 문장 변환 및 음성 생성
-@app.post("/translate", response_model=TranslationResponse)
+@app.post("/api/translate", response_model=TranslationResponse)
 async def translate(request: TranslationRequest):
     try:
         logger.info("🔍 번역 요청 수신: %s", request.words)
