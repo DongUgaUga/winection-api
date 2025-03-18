@@ -1,5 +1,8 @@
+# Python 3.9 + Debian Bullseye 환경 사용
+FROM --platform=linux/amd64 python:3.9-slim-bullseye
+
 # 작업 디렉토리 설정
-FROM WORKDIR /src
+WORKDIR /src
 
 # 필수 패키지 설치 (gcc, libpq-dev 필요 시 유지)
 RUN apt update && apt install -y \
