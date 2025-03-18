@@ -63,13 +63,12 @@ pipeline {
         }
         failure {
             script {
-                def logs = currentBuild.rawBuild.join("\n")
                 discordSend description: """
                         제목 : ${currentBuild.displayName}
                         결과 : ${currentBuild.result}
                         실행 시간 : ${currentBuild.duration / 1000}s
                         """, 
-                    footer: "⚠️ 빌드 실패 로그 ⚠️\n```\n${logs}\n```", 
+                    footer: "⚠️ 빌드 실패 : 상세 로그는 링크 들어가서 확인하세요 ⚠️", 
                     link: env.BUILD_URL, result: currentBuild.currentResult, 
                     title: "${env.JOB_NAME} : ${currentBuild.displayName} 실패", 
                     webhookURL: env.DISCORD
