@@ -8,7 +8,7 @@ rooms = {}
 
 slts_router = APIRouter()
 
-@slts_router.websocket("/api/slts/{room_id}")
+@slts_router.websocket("/api/ws/slts/{room_id}")
 async def websocket_endpoint(websocket: WebSocket, room_id: str):
     try:
         await websocket.accept()
