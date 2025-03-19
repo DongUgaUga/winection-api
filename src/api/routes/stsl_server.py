@@ -9,7 +9,7 @@ rooms = {}
 
 stsl_router = APIRouter()
 
-@stsl_router.websocket("/api/ws/stsl/{room_id}")
+@stsl_router.websocket("/ws/stsl/{room_id}")
 async def websocket_endpoint(websocket: WebSocket, room_id: str):
     await websocket.accept()
     logger.info(f"STSL WebSocket 연결됨 - Room:[{room_id}]")

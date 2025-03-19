@@ -26,10 +26,10 @@ app = FastAPI(
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 모든 도메인 허용 (보안이 필요한 경우 특정 도메인만 입력)
+    allow_origins=["https://api.winection.kro.kr"],
     allow_credentials=True,
-    allow_methods=["*"],  # 모든 HTTP 메서드 허용 (GET, POST, PUT, DELETE 등)
-    allow_headers=["*"],  # 모든 헤더 허용
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # WebSocket: 웹소켓 통신 
@@ -39,7 +39,7 @@ app.include_router(stsl_router)
 # 요청 데이터 모델 정의 (삭제됨 - core/models.py에서 관리)
 
 # FastAPI: 문장 변환 및 음성 생성
-@app.post("/api/translate", response_model=TranslationResponse)
+@app.post("/translate", response_model=TranslationResponse)
 async def translate(request: TranslationRequest):
     try:
         logger.info("🔍 번역 요청 수신: %s", request.words)
