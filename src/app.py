@@ -36,7 +36,10 @@ app.add_middleware(
 app.include_router(slts_router)
 app.include_router(stsl_router)
 
-# 요청 데이터 모델 정의 (삭제됨 - core/models.py에서 관리)
+# get 요청 테스트용
+@app.get("/")
+async def root():
+    return {"message": "API is running"}
 
 # FastAPI: 문장 변환 및 음성 생성
 @app.post("/translate", response_model=TranslationResponse)
