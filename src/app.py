@@ -9,8 +9,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException
 from core.models import TranslationRequest, TranslationResponse
 from core.logging import logger
-from api.to_speech.to_speech_router import to_speech_router
-from api.to_sign.to_sign_router import to_sign_router
+from api.to_speech.to_speech import to_speech_router
+from api.to_sign.to_sign import to_sign_router
 from src.api.to_speech.services.sentence import word_to_sentence
 from src.api.to_speech.services.speech import text_to_speech
 
@@ -41,7 +41,7 @@ async def root():
 
 # FastAPI: 문장 변환 및 음성 생성
 @app.post("/translate", response_model=TranslationResponse)
-async def translate(request: TranslationRequest):
+async def word_to_speech(request: TranslationRequest):
     try:
         logger.info("🔍 번역 요청 수신: %s", request.words)
         # DeepSeek API로 문장 변환
