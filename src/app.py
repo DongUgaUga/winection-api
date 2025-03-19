@@ -5,16 +5,14 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SRC_DIR = os.path.abspath(os.path.join(BASE_DIR))
 sys.path.append(SRC_DIR)
 
-
-import logging
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException
 from core.models import TranslationRequest, TranslationResponse
 from core.logging import logger
-from api.routes.to_speech_server import to_speech_router
-from api.routes.to_sign_server import to_sign_router
-from api.services.to_speech.sentence import word_to_sentence
-from api.services.to_speech.speech import text_to_speech
+from src.api.to_speech.to_speech_server import to_speech_router
+from src.api.to_sign.to_sign_server import to_sign_router
+from src.api.to_speech.services.sentence import word_to_sentence
+from src.api.to_speech.services.speech import text_to_speech
 
 # FastAPI: 애플리케이션 초기화
 app = FastAPI(
