@@ -26,7 +26,7 @@ app = FastAPI(
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://api.winection.kro.kr"],
+    allow_origins=["https://winection.kro.kr"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
