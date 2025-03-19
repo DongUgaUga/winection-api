@@ -9,8 +9,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException
 from core.models import TranslationRequest, TranslationResponse
 from core.logging import logger
-from src.api.to_speech.to_speech_server import to_speech_router
-from src.api.to_sign.to_sign_server import to_sign_router
+from api.to_speech.to_speech_router import to_speech_router
+from api.to_sign.to_sign_router import to_sign_router
 from src.api.to_speech.services.sentence import word_to_sentence
 from src.api.to_speech.services.speech import text_to_speech
 
