@@ -2,17 +2,17 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from core.models import WebSocketMessage
 import json
 from core.logging import logger
-from api.services.stsl.word import text_to_word
+from api.services.to_sign.word import text_to_word
 
 # WebSocket 연결을 관리할 방(room) 딕셔너리
 rooms = {}
 
-stsl_router = APIRouter()
+to_sign_router = APIRouter()
 
-@stsl_router.websocket("/ws/stsl/{room_id}")
+@to_sign_router.websocket("/ws/stsl/{room_id}")
 async def websocket_endpoint(websocket: WebSocket, room_id: str):
     await websocket.accept()
-    logger.info(f"STSL WebSocket 연결됨 - Room:[{room_id}]")
+    logger.info(f"to_sign WebSocket 연결됨 - Room:[{room_id}]")
 
     if room_id not in rooms:
         rooms[room_id] = []
@@ -44,10 +44,10 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
                         rooms[room_id].remove(ws)
 
     except WebSocketDisconnect:
-        logger.info(f"STSL WebSocket 연결 종료 - Room:[{room_id}]")
+        logger.info(f"to_sign WebSocket 연결 종료 - Room:[{room_id}]")
         if websocket in rooms.get(room_id, []):
             rooms[room_id].remove(websocket)
             if not rooms[room_id]:
                 del rooms[room_id]
     except Exception as e:
-        logger.error(f"[STSL WebSocket 오류] {e}")
+        logger.error(f"[to_sign WebSocket 오류] {e}")

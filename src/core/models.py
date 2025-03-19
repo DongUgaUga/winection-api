@@ -1,11 +1,11 @@
 from pydantic import BaseModel
 from typing import List, Any, Union
 
-# STSL API
+# TO_SIGN API
 class TranslationRequest(BaseModel):
     words: List[str]
 
-# SLTS API
+# TO_SPEECH API
 class TranslationResponse(BaseModel):
     translated_sentence: str
     audio_base64: str

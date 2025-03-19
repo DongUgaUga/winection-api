@@ -6,9 +6,9 @@ from core.logging import logger
 # WebSocket 연결을 관리할 방(room) 딕셔너리
 rooms = {}
 
-slts_router = APIRouter()
+to_speech_router = APIRouter()
 
-@slts_router.websocket("/ws/slts/{room_id}")
+@to_speech_router.websocket("/ws/slts/{room_id}")
 async def websocket_endpoint(websocket: WebSocket, room_id: str):
     try:
         await websocket.accept()

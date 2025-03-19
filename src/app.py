@@ -11,10 +11,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException
 from core.models import TranslationRequest, TranslationResponse
 from core.logging import logger
-from api.routes.slts_server import slts_router
-from api.routes.stsl_server import stsl_router
-from api.services.slts.sentence import word_to_sentence
-from api.services.slts.speech import text_to_speech
+from api.routes.to_speech_server import to_speech_router
+from api.routes.to_sign_server import to_sign_router
+from api.services.to_speech.sentence import word_to_sentence
+from api.services.to_speech.speech import text_to_speech
 
 # FastAPI: 애플리케이션 초기화
 app = FastAPI(
@@ -26,15 +26,15 @@ app = FastAPI(
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://winection.kro.kr"],
+    allow_origins=["https://winection.kro.kr, https://api.winection.kro.kr"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # WebSocket: 웹소켓 통신 
-app.include_router(slts_router)
-app.include_router(stsl_router)
+app.include_router(to_speech_router)
+app.include_router(to_sign_router)
 
 # get 요청 테스트용
 @app.get("/")
