@@ -1,9 +1,8 @@
 # .gitignore
 .env
 .DS_Store
-.idea/*
-.venv/*
-*/node_modules/*
-logs/*
+.idea
+.venv
+logs
 mkcert
 conf
