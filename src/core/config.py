@@ -11,7 +11,7 @@ if not GOOGLE_API_KEY:
 
 PROJECT_ID = 'winection-project'
 
-# DeepSeek API 키 (환경 변수에서 로드)
-DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
-if not DEEPSEEK_API_KEY:
-    raise ValueError("환경변수 'DEEPSEEK_API_KEY'가 설정되지 않았습니다.")
+# OpenAI API 키 (환경 변수에서 로드)
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+if not OPENAI_API_KEY:
+    raise ValueError("환경변수 'OPENAI_API_KEY'가 설정되지 않았습니다.")

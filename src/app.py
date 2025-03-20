@@ -11,7 +11,7 @@ from core.models import TranslationRequest, TranslationResponse
 from core.logging import logger
 from api.to_speech.to_speech import to_speech_router
 from api.to_sign.to_sign import to_sign_router
-from src.api.to_speech.services.sentence import word_to_sentence
+from src.api.to_speech.services.sentence import word_to_sentence, stop_word_to_sentence
 from src.api.to_speech.services.speech import text_to_speech
 
 # FastAPI: 애플리케이션 초기화
@@ -24,7 +24,12 @@ app = FastAPI(
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://winection.kro.kr, https://api.winection.kro.kr"],
+    allow_origins=[
+        "https://winection.kro.kr",
+        "https://api.winection.kro.kr",
+        "https://localhost:3000",
+        "https://localhost:9090",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -44,8 +49,8 @@ async def root():
 async def word_to_speech(request: TranslationRequest):
     try:
         logger.info("🔍 번역 요청 수신: %s", request.words)
-        # DeepSeek API로 문장 변환
-        sentence = word_to_sentence(request.words)
+        # OpenAI API로 문장 변환
+        sentence = stop_word_to_sentence(request.words)
 
         # Google TTS로 음성 변환 (Base64 인코딩된 MP3 반환)
         audio_base64 = text_to_speech("ko-KR-Wavenet-D", sentence)
@@ -55,3 +60,5 @@ async def word_to_speech(request: TranslationRequest):
     except RuntimeError as e:
         logger.error(f"[sentence_builder] 오류 발생: {str(e)}")
         raise HTTPException(status_code=500, detail="sentence_builder 중 오류 발생")
+
+# uvicorn src.app:app --host 0.0.0.0 --port 9090 --reload --reload-dir src --ssl-keyfile ./mkcert/key.pem --ssl-certfile ./mkcert/cert.pem

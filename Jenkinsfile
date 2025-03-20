@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DEEPSEEK_API_KEY = credentials('deepseek_api_key')
+        OPENAI_API_KEY = credentials('openai_api_key')
         GOOGLE_CLOUD_API_KEY = credentials('google_cloud_api_key')
         PROJECT_ID = credentials('project_id')
         DISCORD = credentials('discord_webhook')
@@ -30,7 +30,7 @@ pipeline {
             steps {
                 script {
                     sh '''
-                    echo "DEEPSEEK_API_KEY=$DEEPSEEK_API_KEY" > .env
+                    echo "OPENAI_API_KEY=$OPENAI_API_KEY" > .env
                     echo "GOOGLE_CLOUD_API_KEY=$GOOGLE_CLOUD_API_KEY" >> .env
                     echo "PROJECT_ID=$PROJECT_ID" >> .env
                     chmod 600 .env

@@ -2,7 +2,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from core.models import WebSocketMessage
 import json
 from core.logging import logger
-from api.services.to_sign.word import text_to_word
+from api.to_sign.services.word import text_to_word
 
 # WebSocket 연결을 관리할 방(room) 딕셔너리
 rooms = {}
