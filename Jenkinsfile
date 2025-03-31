@@ -69,7 +69,7 @@ pipeline {
                         실행 시간 : ${currentBuild.duration / 1000}s
                         """, 
                     footer: "⚠️ 빌드 실패 : 상세 로그는 링크 들어가서 확인하세요 ⚠️", 
-                    link: link: "${env.BUILD_URL}console", result: currentBuild.currentResult, 
+                    link: "${env.BUILD_URL}console", result: currentBuild.currentResult, 
                     title: "${env.JOB_NAME} : ${currentBuild.displayName} 실패", 
                     webhookURL: env.DISCORD
             }
