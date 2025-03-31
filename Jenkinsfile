@@ -13,7 +13,7 @@ pipeline {
             steps {
                 script {
                     discordSend description: "젠킨스 배포를 시작합니다!", 
-                        link: env.BUILD_URL, 
+                        link: "${env.BUILD_URL}console", 
                         title: "${env.JOB_NAME} : ${currentBuild.displayName} 시작", 
                         webhookURL: env.DISCORD
                 }
