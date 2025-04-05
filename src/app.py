@@ -13,7 +13,8 @@ from api.to_speech.to_speech import to_speech_router
 from api.to_sign.to_sign import to_sign_router
 from src.api.to_speech.services.sentence import word_to_sentence, stop_word_to_sentence
 from src.api.to_speech.services.speech import text_to_speech
-from api.auth import register
+from api.auth import register, login
+from api.user import me
 
 # FastAPI: 애플리케이션 초기화
 app = FastAPI(
@@ -37,15 +38,12 @@ app.add_middleware(
 )
 
 app.include_router(register.router)
+app.include_router(login.router)
+app.include_router(me.router)
 
 # WebSocket: 웹소켓 통신 
 app.include_router(to_speech_router)
 app.include_router(to_sign_router)
-
-# get 요청 테스트용
-@app.get("/")
-async def root():
-    return {"message": "API is running"}
 
 # FastAPI: 문장 변환 및 음성 생성
 @app.post("/translate", response_model=TranslationResponse)

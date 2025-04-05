@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
-from core.models import Base
+from core.auth.models import Base
 
 from dotenv import load_dotenv
 import os
