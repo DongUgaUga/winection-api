@@ -7,12 +7,13 @@ sys.path.append(SRC_DIR)
 
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException
-from core.models import TranslationRequest, TranslationResponse
+from core.schemas import TranslationRequest, TranslationResponse
 from core.logging import logger
 from api.to_speech.to_speech import to_speech_router
 from api.to_sign.to_sign import to_sign_router
 from src.api.to_speech.services.sentence import word_to_sentence, stop_word_to_sentence
 from src.api.to_speech.services.speech import text_to_speech
+from api.auth import register
 
 # FastAPI: 애플리케이션 초기화
 app = FastAPI(
@@ -34,6 +35,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(register.router)
 
 # WebSocket: 웹소켓 통신 
 app.include_router(to_speech_router)

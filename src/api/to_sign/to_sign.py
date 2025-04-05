@@ -1,5 +1,5 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from core.models import WebSocketMessage
+from core.schemas import WebSocketMessage
 import json
 from core.logging import logger
 from api.to_sign.services.word import text_to_word
