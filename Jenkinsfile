@@ -9,7 +9,6 @@ pipeline {
 
         DB_USER = credentials('db_user')
         DB_PASSWD = credentials('db_passwd')
-        DB_HOST = credentials('db_host')
         DB_PORT = credentials('db_port')
         DB_NAME = credentials('db_name')
         SECRET_KEY = credentials('secret_key')
@@ -42,7 +41,6 @@ pipeline {
                     echo "PROJECT_ID=$PROJECT_ID" >> .env
                     echo "DB_USER=$DB_USER" >> .env
                     echo "DB_PASSWD=$DB_PASSWD" >> .env
-                    echo "DB_HOST=$DB_HOST" >> .env
                     echo "DB_PORT=$DB_PORT" >> .env
                     echo "DB_NAME=$DB_NAME" >> .env
                     echo "SECRET_KEY=$SECRET_KEY" >> .env
