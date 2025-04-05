@@ -4,12 +4,11 @@ services:
   db:
     image: mysql:8.0
     container_name: db
-    ports:
-      - "3306:3306"
-    restart: always
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_PASSWD}
       MYSQL_DATABASE: ${DB_NAME}
+    ports:
+      - "3306:3306"
     networks:
       - app-network
 
@@ -20,13 +19,13 @@ services:
     container_name: api
     ports:
       - "8000:8000"
-    restart: always
-    env_file:
-      - .env
     depends_on:
       - db
+    env_file:
+      - .env
     networks:
       - app-network
+    command: ["/wait-for-it.sh", "db:3306", "--timeout=60", "--", "uvicorn", "src.app:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--reload-dir", "src"]
 
 networks:
   app-network:
