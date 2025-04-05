@@ -1,15 +1,12 @@
-version: "3.8"
-
 services:
   db:
     image: mysql:8.0
-    container_name: db
-    ports:
-      - "3306:3306"
-    restart: always
+    container_name: winection-db
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_PASSWD}
       MYSQL_DATABASE: ${DB_NAME}
+    ports:
+      - "3306:3306"
     networks:
       - app-network
 
@@ -18,13 +15,12 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: api
-    ports:
-      - "8000:8000"
-    restart: always
     env_file:
       - .env
     depends_on:
       - db
+    ports:
+      - "8000:8000"
     networks:
       - app-network
 
