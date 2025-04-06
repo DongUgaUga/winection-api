@@ -3,7 +3,7 @@ import string
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
-from .to_speech import rooms  # 이미 WebSocket에서 공유 중인 rooms 딕셔너리 사용
+from api.room.to_speech.to_speech import rooms
 
 room_router = APIRouter()
 
