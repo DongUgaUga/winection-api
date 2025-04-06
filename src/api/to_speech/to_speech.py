@@ -5,7 +5,7 @@ from core.logging import logger
 
 to_speech_router = APIRouter()
 rooms = {}
-MAX_ROOM_CAPACITY = 2  # 방 최대 인원 수
+MAX_ROOM_CAPACITY = 2
 
 @to_speech_router.websocket("/ws/slts/{room_id}")
 async def websocket_endpoint(websocket: WebSocket, room_id: str):
