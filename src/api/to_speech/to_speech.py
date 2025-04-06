@@ -5,9 +5,15 @@ from core.logging import logger
 
 to_speech_router = APIRouter()
 rooms = {}
+MAX_ROOM_CAPACITY = 2  # 방 최대 인원 수
 
 @to_speech_router.websocket("/ws/slts/{room_id}")
 async def websocket_endpoint(websocket: WebSocket, room_id: str):
+    if room_id in rooms and len(rooms[room_id]) >= MAX_ROOM_CAPACITY:
+        await websocket.close(code=1008)
+        logger.info(f"[{room_id}] 방 인원 초과로 접속 거부됨")
+        return
+
     await websocket.accept()
     logger.info(f"Client가 Room:[{room_id}]에 접속했습니다.")
 
