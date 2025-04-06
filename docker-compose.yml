@@ -27,7 +27,7 @@ services:
       - .env
     networks:
       - app-network
-    command: ["/wait-for-it.sh", "db:3306", "--timeout=60", "--", "uvicorn", "src.app:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--reload-dir", "src"]
+    command: ["/wait-for-it.sh", "db:3306", "--timeout=120", "--", "uvicorn", "src.app:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--reload-dir", "src"]
 
 networks:
   app-network:
