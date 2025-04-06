@@ -7,10 +7,16 @@ to_speech_router = APIRouter()
 rooms = {}
 MAX_ROOM_CAPACITY = 2
 
+def remove_client(websocket: WebSocket, room_id: str):
+    if websocket in rooms.get(room_id, []):
+        rooms[room_id].remove(websocket)
+        if not rooms[room_id]:
+            del rooms[room_id]
+
 @to_speech_router.websocket("/ws/slts/{room_id}")
 async def websocket_endpoint(websocket: WebSocket, room_id: str):
     if room_id in rooms and len(rooms[room_id]) >= MAX_ROOM_CAPACITY:
-        await websocket.close(code=1008)
+        await websocket.close(code=1008, reason="Room full")
         logger.info(f"[{room_id}] 방 인원 초과로 접속 거부됨")
         return
 
@@ -30,7 +36,6 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
                 message_data = parsed.get("data")
 
                 if message_type == "hand_data":
-                    # 실시간 손 좌표 중계
                     for ws in list(rooms.get(room_id, [])):
                         try:
                             await ws.send_json({
@@ -39,19 +44,17 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
                             })
                         except Exception as e:
                             logger.error(f"[{room_id}] 클라이언트 전송 오류: {e}")
-                            rooms[room_id].remove(ws)
-
+                            remove_client(ws, room_id)
+                else:
+                    logger.warning(f"[{room_id}] 지원되지 않는 메시지 타입: {message_type}")
             except Exception as e:
                 logger.error(f"[{room_id}] 메시지 파싱 오류: {e}")
+                continue
+
     except WebSocketDisconnect:
         logger.info(f"Client가 Room:[{room_id}]에서 나갔습니다.")
-        if websocket in rooms[room_id]:
-            rooms[room_id].remove(websocket)
-            if not rooms[room_id]:
-                del rooms[room_id]
+        remove_client(websocket, room_id)
+
     except Exception as e:
         logger.error(f"[{room_id}] WebSocket 처리 오류: {e}")
-        if websocket in rooms.get(room_id, []):
-            rooms[room_id].remove(websocket)
-            if not rooms[room_id]:
-                del rooms[room_id]
+        remove_client(websocket, room_id)

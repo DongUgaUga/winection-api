@@ -15,6 +15,7 @@ from src.api.to_speech.services.sentence import word_to_sentence, stop_word_to_s
 from src.api.to_speech.services.speech import text_to_speech
 from api.auth import register, login
 from api.user import me
+from api.room import room_router
 
 # FastAPI: 애플리케이션 초기화
 app = FastAPI(
@@ -41,7 +42,8 @@ app.include_router(register.router)
 app.include_router(login.router)
 app.include_router(me.router)
 
-# WebSocket: 웹소켓 통신 
+app.include_router(room_router)
+
 app.include_router(to_speech_router)
 app.include_router(to_sign_router)
 
