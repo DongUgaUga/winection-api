@@ -4,9 +4,9 @@ from src.api.room.to_speech.services.sentence import stop_word_to_sentence
 from src.api.room.to_speech.services.speech import text_to_speech
 from core.logging import logger
 
-translate_router = APIRouter()
+router = APIRouter()
 
-@translate_router.post("/translate", response_model=TranslationResponse)
+@router.post("/translate", response_model=TranslationResponse)
 async def word_to_speech(request: TranslationRequest):
     try:
         logger.info("🔍 번역 요청 수신: %s", request.words)
