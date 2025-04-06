@@ -7,9 +7,9 @@ from api.room.to_sign.services.word import text_to_word
 # WebSocket 연결을 관리할 방(room) 딕셔너리
 rooms = {}
 
-to_sign_router = APIRouter()
+router = APIRouter()
 
-@to_sign_router.websocket("/ws/stsl/{room_id}")
+@router.websocket("/ws/stsl/{room_id}")
 async def websocket_endpoint(websocket: WebSocket, room_id: str):
     await websocket.accept()
     logger.info(f"to_sign WebSocket 연결됨 - Room:[{room_id}]")

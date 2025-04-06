@@ -3,7 +3,7 @@ from core.schemas import WebSocketMessage
 import json
 from core.logging import logger
 
-to_speech_router = APIRouter()
+router = APIRouter()
 rooms = {}
 MAX_ROOM_CAPACITY = 2
 
@@ -13,7 +13,7 @@ def remove_client(websocket: WebSocket, room_id: str):
         if not rooms[room_id]:
             del rooms[room_id]
 
-@to_speech_router.websocket("/ws/slts/{room_id}")
+@router.websocket("/ws/slts/{room_id}")
 async def websocket_endpoint(websocket: WebSocket, room_id: str):
     if room_id in rooms and len(rooms[room_id]) >= MAX_ROOM_CAPACITY:
         await websocket.close(code=1008, reason="Room full")
