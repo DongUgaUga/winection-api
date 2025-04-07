@@ -45,6 +45,17 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
                         except Exception as e:
                             logger.error(f"[{room_id}] 클라이언트 전송 오류: {e}")
                             remove_client(ws, room_id)
+                elif message_type in ["offer", "answer", "candidate"]:
+                    for ws in list(rooms.get(room_id, [])):
+                        if ws != websocket:
+                            try:
+                                await ws.send_text(json.dumps({
+                                    "type": message_type,
+                                    "data": message_data
+                                }))
+                            except Exception as e:
+                                logger.error(f"[{room_id}] WebRTC 시그널링 전송 오류: {e}")
+                                remove_client(ws, room_id)
                 else:
                     logger.warning(f"[{room_id}] 지원되지 않는 메시지 타입: {message_type}")
             except Exception as e:
