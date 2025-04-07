@@ -13,6 +13,19 @@ def remove_client(websocket: WebSocket, room_id: str):
         if not rooms[room_id]:
             del rooms[room_id]
 
+async def notify_peer_leave(websocket: WebSocket, room_id: str):
+    """상대방에게 leave 메시지 전송"""
+    for ws in list(rooms.get(room_id, [])):
+        if ws != websocket:
+            try:
+                await ws.send_json({
+                    "type": "leave",
+                    "client_id": "peer"
+                })
+            except Exception as e:
+                logger.error(f"[{room_id}] leave 알림 전송 실패: {e}")
+                remove_client(ws, room_id)
+
 @router.websocket("/ws/slts/{room_id}")
 async def websocket_endpoint(websocket: WebSocket, room_id: str):
     if room_id in rooms and len(rooms[room_id]) >= MAX_ROOM_CAPACITY:
@@ -53,8 +66,10 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
 
     except WebSocketDisconnect:
         logger.info(f"Client가 Room:[{room_id}]에서 나갔습니다.")
+        await notify_peer_leave(websocket, room_id)
         remove_client(websocket, room_id)
 
     except Exception as e:
         logger.error(f"[{room_id}] WebSocket 처리 오류: {e}")
+        await notify_peer_leave(websocket, room_id)
         remove_client(websocket, room_id)
