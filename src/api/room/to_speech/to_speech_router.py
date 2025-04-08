@@ -82,6 +82,14 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
                             })
                         except Exception as e:
                             logger.error(f"카메라 상태 전송 실패: {e}")
+                
+                elif message_type == "mic_state":
+                    for ws in rooms.get(room_id, []):
+                        await ws.send_json({
+                            "type": "mic_state",
+                            "client_id": "peer" if ws != websocket else "self",
+                            "data": message_data
+                        })
 
                 else:
                     logger.warning(f"[{room_id}] 지원되지 않는 메시지 타입: {message_type}")
