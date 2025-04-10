@@ -3,8 +3,8 @@ import google.cloud.texttospeech as tts
 import base64
 import os
 from dotenv import load_dotenv
-from core.logging import logger
-from core.config import GOOGLE_API_KEY, PROJECT_ID
+from core.log.logging import logger
+from core.config.env_config import GOOGLE_API_KEY, PROJECT_ID
 
 def text_to_speech(voice_name: str, text: str) -> str:
     try:

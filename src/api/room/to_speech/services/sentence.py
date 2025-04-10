@@ -1,8 +1,8 @@
 import openai
 import os
 from dotenv import load_dotenv
-from core.logging import logger
-from core.config import OPENAI_API_KEY 
+from core.log.logging import logger
+from core.config.env_config import OPENAI_API_KEY 
 
 client = openai.OpenAI(api_key=OPENAI_API_KEY)
 

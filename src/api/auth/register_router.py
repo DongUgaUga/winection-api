@@ -1,14 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from core.database import get_db
+from core.db.database import get_db
 from core.auth.models import User
-from core.schemas import RegisterRequest
+from core.schemas.user_schema import RegisterRequest
+from core.validators.user_validators import validate_register
 from core.auth.security import hash_password
 
 router = APIRouter()
 
 @router.post("/register")
 def register_user(request: RegisterRequest, db: Session = Depends(get_db)):
+    validate_register(request)
     # 중복 아이디 검사
     existing_user = db.query(User).filter(User.username == request.username).first()
     if existing_user:

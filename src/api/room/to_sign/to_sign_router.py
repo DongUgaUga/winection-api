@@ -1,7 +1,7 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from core.schemas import WebSocketMessage
+from core.schemas.schemas import WebSocketMessage
 import json
-from core.logging import logger
+from core.log.logging import logger
 from api.room.to_sign.services.word import text_to_word
 
 # WebSocket 연결을 관리할 방(room) 딕셔너리

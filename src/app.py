@@ -6,9 +6,10 @@ SRC_DIR = os.path.abspath(os.path.join(BASE_DIR))
 sys.path.append(SRC_DIR)
 
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, HTTPException
-from core.schemas import TranslationRequest, TranslationResponse
-from core.logging import logger
+from fastapi import FastAPI
+
+from core.config.cors_config import add_cors_middleware
+from core.config.swagger_config import custom_openapi
 from api.room.to_speech import to_speech_router, translate_router
 from api.room.to_sign import to_sign_router
 from api.auth import login_router, register_router
@@ -21,18 +22,9 @@ app = FastAPI(
     version="0.1"
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "https://winection.kro.kr",
-        "https://api.winection.kro.kr",
-        "https://localhost:3000",
-        "https://localhost:9090",
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+add_cors_middleware(app)
+
+app.openapi = lambda: custom_openapi(app)
 
 app.include_router(register_router.router)
 app.include_router(login_router.router)

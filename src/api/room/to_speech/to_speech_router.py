@@ -1,7 +1,7 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from core.schemas import WebSocketMessage
+from core.schemas.schemas import WebSocketMessage
 import json
-from core.logging import logger
+from core.log.logging import logger
 
 router = APIRouter()
 rooms = {}
