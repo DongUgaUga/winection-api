@@ -7,9 +7,12 @@ class TranslationRequest(BaseModel):
 
 class TranslationResponse(BaseModel):
     translated_sentence: str = Field(example="안녕, 동우야. 반가워!")
-    audio_base64: str
+    audio_base64: str = Field(..., example="UklGRjQAAABXQVZFZm10IBAAAAABAAEA...")
 
 # WebSocket 메시지
 class WebSocketMessage(BaseModel):
     type: str
     data: Union[str, dict]
+
+class CreateRoomResponse(BaseModel):
+    room_id: str = Field(example="A1b7D3")
