@@ -15,4 +15,4 @@ class WebSocketMessage(BaseModel):
     data: Union[str, dict]
 
 class CreateRoomResponse(BaseModel):
-    room_id: str = Field(example="A1b7D3")
+    room_id: str = Field(example="x8p2z1")
