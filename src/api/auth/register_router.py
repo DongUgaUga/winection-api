@@ -1,7 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from fastapi.responses import JSONResponse
-from fastapi.exceptions import RequestValidationError
 
 from core.db.database import get_db
 from core.auth.models import User
@@ -10,25 +8,6 @@ from core.validators.user_validators import validate_register, validate_nickname
 from core.auth.security import hash_password
 
 router = APIRouter()
-
-@router.exception_handler(RequestValidationError)
-async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    errors = exc.errors()
-    missing_fields = [e["loc"][-1] for e in errors if e["type"] == "missing"]
-    if missing_fields:
-        return JSONResponse(
-            status_code=400,
-            content={
-                "detail": f"다음 필드가 누락되었습니다: {', '.join(missing_fields)}"
-            }
-        )
-    return JSONResponse(
-        status_code=422,
-        content={
-            "detail": "유효성 검사 실패",
-            "errors": errors
-        }
-    )
 
 @router.post(
     "/register",
@@ -44,7 +23,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             }
         },
         400: {
-            "description": "입력값 오류 또는 누락",
+            "description": "입력값 오류 또는 중복",
             "content": {
                 "application/json": {
                     "example": {"detail": "다음 필드가 누락되었습니다: phone_number"}
@@ -55,7 +34,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 )
 def register_user(request: RegisterRequest, db: Session = Depends(get_db)):
     try:
-        validate_register(request, db)
+        validate_register(request, db)  # 검증 로직을 여기에서 호출
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -102,7 +81,7 @@ def register_user(request: RegisterRequest, db: Session = Depends(get_db)):
 )
 def check_nickname(nickname: str, db: Session = Depends(get_db)):
     try:
-        validate_nickname(nickname, db)
+        validate_nickname(nickname, db)  # 닉네임 중복 확인
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     return {"message": "사용 가능한 닉네임입니다."}
