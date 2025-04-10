@@ -22,6 +22,7 @@ def register_user(request: RegisterRequest, db: Session = Depends(get_db)):
         username=request.username,
         password=hashed_pw,
         nickname=request.nickname,
+        phone_number=request.phone_number,
         user_type=request.user_type,
         emergency_type=request.emergency_type,
         address=request.address,
