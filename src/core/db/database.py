@@ -9,7 +9,7 @@ import os
 load_dotenv()
 user = os.getenv("DB_USER")
 passwd = os.getenv("DB_PASSWD")
-host = "localhost" #"db" #"localhost"
+host = "db" #"db" #"localhost"
 port = os.getenv("DB_PORT")
 db = os.getenv("DB_NAME")
 
