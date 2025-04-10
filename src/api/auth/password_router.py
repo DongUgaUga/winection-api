@@ -7,7 +7,7 @@ from core.schemas.user_schema import (
     ResetPasswordRequest,
     MessageResponse
 )
-from core.validators.user_validators import validate_password_reset
+from core.validators.user_validators import validate_password
 from core.auth.security import hash_password
 
 router = APIRouter()
@@ -82,7 +82,7 @@ def reset_password(data: ResetPasswordRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="존재하지 않는 유저입니다.")
 
     try:
-        validate_password_reset(data.new_password, data.confirm_password)
+        validate_password(data.new_password, data.confirm_password)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 

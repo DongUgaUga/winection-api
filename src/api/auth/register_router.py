@@ -1,5 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
+
 from core.db.database import get_db
 from core.auth.models import User
 from core.schemas.user_schema import RegisterRequest, MessageResponse
@@ -7,6 +10,25 @@ from core.validators.user_validators import validate_register, validate_nickname
 from core.auth.security import hash_password
 
 router = APIRouter()
+
+@router.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    errors = exc.errors()
+    missing_fields = [e["loc"][-1] for e in errors if e["type"] == "missing"]
+    if missing_fields:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "detail": f"다음 필드가 누락되었습니다: {', '.join(missing_fields)}"
+            }
+        )
+    return JSONResponse(
+        status_code=422,
+        content={
+            "detail": "유효성 검사 실패",
+            "errors": errors
+        }
+    )
 
 @router.post(
     "/register",
@@ -22,10 +44,10 @@ router = APIRouter()
             }
         },
         400: {
-            "description": "입력값 오류 또는 중복",
+            "description": "입력값 오류 또는 누락",
             "content": {
                 "application/json": {
-                    "example": {"detail": "이미 존재하는 아이디입니다."}
+                    "example": {"detail": "다음 필드가 누락되었습니다: phone_number"}
                 }
             }
         }
