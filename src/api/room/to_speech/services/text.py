@@ -1,16 +1,13 @@
-# src/api/room/to_speech/services/text.py
+# text.py
 
 import numpy as np
 from tensorflow.keras.models import load_model
 
-# 모델 & 라벨 클래스 로드
+# 모델 & 클래스명 로드
 model = load_model("src/resources/ksl_cnn_lstm_model.h5")
-class_names = np.load("class_names.npy")
+class_names = np.load("src/resources/class_names.npy")
 
 def ksl_to_korean(sequence: list[list[float]]) -> str:
-    """
-    [60, 225] 형태의 좌표 시퀀스를 받아 한국어 단어 반환
-    """
     try:
         arr = np.array(sequence, dtype=np.float32)
         if arr.shape != (60, 225):

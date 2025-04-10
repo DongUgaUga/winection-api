@@ -1,5 +1,5 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from core.schemas.schemas import WebSocketMessage
+from core.schemas.schema import WebSocketMessage
 import json
 from core.log.logging import logger
 from src.api.room.to_speech.services.text import ksl_to_korean  # ← 예측 함수 import

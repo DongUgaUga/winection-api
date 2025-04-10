@@ -10,11 +10,11 @@ from fastapi import FastAPI
 
 from core.config.cors_config import add_cors_middleware
 from core.config.swagger_config import custom_openapi
-from api.room.to_speech import to_speech_router, translate_router
-from api.room.to_sign import to_sign_router
 from api.auth import login_router, register_router, password_router
 from api.user import me_router
 from api.room import room_router
+from api.room.to_speech import to_speech_router, translate_router
+from api.room.to_sign import to_sign_router
 
 app = FastAPI(
     title="Winection API",
@@ -32,11 +32,11 @@ app.include_router(me_router.router)
 
 app.include_router(password_router.router)
 
-app.include_router(room_router.router)
 
+app.include_router(room_router.router)
+app.include_router(translate_router.router)
 app.include_router(to_speech_router.router)
 app.include_router(to_sign_router.router)
 
-app.include_router(translate_router.router)
 
 # uvicorn src.app:app --host 0.0.0.0 --port 9090 --reload --reload-dir src --ssl-keyfile ./mkcert/key.pem --ssl-certfile ./mkcert/cert.pem

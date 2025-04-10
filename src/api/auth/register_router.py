@@ -2,14 +2,35 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from core.db.database import get_db
 from core.auth.models import User
-from core.schemas.user_schema import RegisterRequest
+from core.schemas.user_schema import RegisterRequest, MessageResponse
 from core.validators.user_validators import validate_register, validate_nickname
 from core.auth.security import hash_password
-from starlette.status import HTTP_400_BAD_REQUEST
 
 router = APIRouter()
 
-@router.post("/register")
+@router.post(
+    "/register",
+    response_model=MessageResponse,
+    status_code=201,
+    responses={
+        201: {
+            "description": "회원가입 성공",
+            "content": {
+                "application/json": {
+                    "example": {"message": "회원가입이 완료되었습니다!"}
+                }
+            }
+        },
+        400: {
+            "description": "입력값 오류 또는 중복",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "이미 존재하는 아이디입니다."}
+                }
+            }
+        }
+    }
+)
 def register_user(request: RegisterRequest, db: Session = Depends(get_db)):
     try:
         validate_register(request, db)
@@ -34,7 +55,29 @@ def register_user(request: RegisterRequest, db: Session = Depends(get_db)):
 
     return {"message": "회원가입이 완료되었습니다!"}
 
-@router.get("/register/nickname-check")
+
+@router.get(
+    "/register/nickname",
+    response_model=MessageResponse,
+    responses={
+        200: {
+            "description": "사용 가능한 닉네임",
+            "content": {
+                "application/json": {
+                    "example": {"message": "사용 가능한 닉네임입니다."}
+                }
+            }
+        },
+        400: {
+            "description": "중복된 닉네임",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "이미 사용 중인 닉네임입니다."}
+                }
+            }
+        }
+    }
+)
 def check_nickname(nickname: str, db: Session = Depends(get_db)):
     try:
         validate_nickname(nickname, db)

@@ -1,20 +1,12 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Union, List
-
-# 로그인
-class LoginRequest(BaseModel):
-    username: str
-    password: str
-
-class LoginResponse(BaseModel):
-    token: str
 
 # 수어 관련 요청/응답
 class TranslationRequest(BaseModel):
-    words: List[str]
+    words: List[str] = Field(example="['안녕', '이동우', '반갑다']")
 
 class TranslationResponse(BaseModel):
-    translated_sentence: str
+    translated_sentence: str = Field(example="안녕, 동우야. 반가워!")
     audio_base64: str
 
 # WebSocket 메시지
