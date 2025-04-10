@@ -4,7 +4,7 @@ import numpy as np
 from tensorflow.keras.models import load_model
 
 # 모델 & 라벨 클래스 로드
-model = load_model("/resources/ksl_cnn_lstm_model.h5")
+model = load_model("src/resources/ksl_cnn_lstm_model.h5")
 class_names = np.load("class_names.npy")
 
 def ksl_to_korean(sequence: list[list[float]]) -> str:
