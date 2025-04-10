@@ -35,3 +35,8 @@ def validate_password_strength(password: str):
     pattern = r'^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*()_+]).{8,}$'
     if not re.match(pattern, password):
         raise ValueError("비밀번호는 영문, 숫자, 특수문자를 포함한 8자리 이상이어야 합니다.")
+    
+def validate_password_reset(new_password: str, confirm_password: str):
+    if new_password != confirm_password:
+        raise ValueError("비밀번호가 일치하지 않습니다.")
+    validate_password_strength(new_password)

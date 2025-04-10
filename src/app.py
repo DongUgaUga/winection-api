@@ -12,7 +12,7 @@ from core.config.cors_config import add_cors_middleware
 from core.config.swagger_config import custom_openapi
 from api.room.to_speech import to_speech_router, translate_router
 from api.room.to_sign import to_sign_router
-from api.auth import login_router, register_router
+from api.auth import login_router, register_router, password_router
 from api.user import me_router
 from api.room import room_router
 
@@ -29,6 +29,8 @@ app.openapi = lambda: custom_openapi(app)
 app.include_router(register_router.router)
 app.include_router(login_router.router)
 app.include_router(me_router.router)
+
+app.include_router(password_router.router)
 
 app.include_router(room_router.router)
 

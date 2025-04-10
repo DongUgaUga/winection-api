@@ -2,6 +2,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from core.schemas.schemas import WebSocketMessage
 import json
 from core.log.logging import logger
+from src.api.room.to_speech.services.text import ksl_to_korean  # ← 예측 함수 import
 
 router = APIRouter()
 rooms = {}
@@ -14,7 +15,6 @@ def remove_client(websocket: WebSocket, room_id: str):
             del rooms[room_id]
 
 async def notify_peer_leave(websocket: WebSocket, room_id: str):
-    """상대방에게 leave 메시지 전송"""
     for ws in list(rooms.get(room_id, [])):
         if ws != websocket:
             try:
@@ -49,16 +49,30 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
                 message_data = parsed.get("data")
 
                 if message_type == "hand_data":
+                    # 예측 시도
+                    try:
+                        prediction = ksl_to_korean(message_data["hand_data"])
+                    except Exception as e:
+                        logger.error(f"[{room_id}] 예측 오류: {e}")
+                        prediction = "예측 실패"
+
                     for ws in list(rooms.get(room_id, [])):
                         try:
+                            # 좌표 정보 전달
                             await ws.send_json({
                                 "client_id": "peer" if ws != websocket else "self",
                                 "hand_data": message_data
                             })
+                            # 예측 결과 추가 전송
+                            await ws.send_json({
+                                "type": "text",
+                                "client_id": "peer" if ws != websocket else "self",
+                                "result": prediction
+                            })
                         except Exception as e:
                             logger.error(f"[{room_id}] 클라이언트 전송 오류: {e}")
                             remove_client(ws, room_id)
-                            
+
                 elif message_type in ["offer", "answer", "candidate"]:
                     logger.info(f"Room:[{room_id}] - WebRTC 메시지 수신: {message_type}")
                     for ws in list(rooms.get(room_id, [])):
@@ -85,6 +99,7 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
 
                 else:
                     logger.warning(f"[{room_id}] 지원되지 않는 메시지 타입: {message_type}")
+
             except Exception as e:
                 logger.error(f"[{room_id}] 메시지 파싱 오류: {e}")
                 continue
