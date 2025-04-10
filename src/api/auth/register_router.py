@@ -3,20 +3,19 @@ from sqlalchemy.orm import Session
 from core.db.database import get_db
 from core.auth.models import User
 from core.schemas.user_schema import RegisterRequest
-from core.validators.user_validators import validate_register
+from core.validators.user_validators import validate_register, validate_nickname
 from core.auth.security import hash_password
+from starlette.status import HTTP_400_BAD_REQUEST
 
 router = APIRouter()
 
 @router.post("/register")
 def register_user(request: RegisterRequest, db: Session = Depends(get_db)):
-    validate_register(request)
-    # 중복 아이디 검사
-    existing_user = db.query(User).filter(User.username == request.username).first()
-    if existing_user:
-        raise HTTPException(status_code=400, detail="이미 존재하는 아이디입니다.")
+    try:
+        validate_register(request, db)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-    # 비밀번호 해시화
     hashed_pw = hash_password(request.password)
 
     new_user = User(
@@ -33,3 +32,11 @@ def register_user(request: RegisterRequest, db: Session = Depends(get_db)):
     db.commit()
 
     return {"message": "회원가입이 완료되었습니다!"}
+
+@router.get("/register/nickname-check")
+def check_nickname(nickname: str, db: Session = Depends(get_db)):
+    try:
+        validate_nickname(nickname, db)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"message": "사용 가능한 닉네임입니다."}
