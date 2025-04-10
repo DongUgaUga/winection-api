@@ -1,8 +1,8 @@
 from tensorflow.keras.models import load_model
 import numpy as np
 
-model = load_model("path_to_model/ksl_cnn_lstm_model.h5")
-class_names = np.load("path_to_class_names/class_names.npy")
+model = load_model("ksl_cnn_lstm_model.h5")
+class_names = np.load("class_names.npy")
 
 def ksl_to_korean(sequence: list[list[float]]) -> str:
     try:
