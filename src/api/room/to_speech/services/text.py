@@ -17,11 +17,21 @@ def ksl_to_korean(sequence: list[list[float]]) -> str:
 
         arr = np.array(sequence, dtype=np.float32)
 
-        if arr.shape != (60, 225):
-            raise ValueError("입력 shape은 (60, 225) 여야 합니다.")
+        # 각 좌표는 (60, 3) 형태로 되어 있음. 이를 (60, 225)로 맞춰야 함.
+        if arr.shape != (60, 3):
+            raise ValueError("입력 shape은 (60, 3) 여야 합니다.")
 
-        input_tensor = np.expand_dims(arr, axis=0)
+        # 각 좌표의 x, y, z 값을 하나로 합쳐서 225에 맞게 변환
+        arr = arr.flatten()  # (60, 3) → (180,)
+        
+        # 부족한 부분을 0으로 패딩하여 (225,) 크기로 맞추기
+        padding = np.zeros(225 - arr.shape[0])  # 225 크기에 맞는 패딩 추가
+        arr = np.concatenate([arr, padding])  # (180,) → (225,)
+
+        # 모델 입력을 위한 차원 확장
+        input_tensor = np.expand_dims(arr, axis=0)  # (225,) → (1, 225)
         pred = model.predict(input_tensor)
+        
         label = class_names[np.argmax(pred)]
 
         return str(label)
