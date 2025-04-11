@@ -48,10 +48,10 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
                 message_type = parsed.get("type")
                 message_data = parsed.get("data")
 
-                if message_type == "hand_data":
+                if message_type == "land_mark":
                     # 예측 시도
                     try:
-                        prediction = ksl_to_korean(message_data["hand_data"])
+                        prediction = ksl_to_korean(message_data["land_mark"])
                         logger.info(f"[{room_id}] 예측 결과: {prediction}")
                     except Exception as e:
                         logger.error(f"[{room_id}] 예측 오류: {e}")
