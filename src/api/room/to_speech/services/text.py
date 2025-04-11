@@ -10,7 +10,7 @@ def ksl_to_korean(sequence: list[list[float]]) -> str:
         print(f"입력 데이터 타입: {type(sequence)}")
         if isinstance(sequence, dict):
             print(f"입력된 dict 형태의 데이터: {sequence}")
-            sequence = sequence.get('hand_data', [])
+            sequence = sequence.get('land_mark', [])
         
         if not isinstance(sequence, list):
             raise ValueError("입력 데이터는 list 형태여야 합니다.")
