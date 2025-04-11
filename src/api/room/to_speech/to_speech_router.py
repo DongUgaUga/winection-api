@@ -52,18 +52,14 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
                     # 예측 시도
                     try:
                         prediction = ksl_to_korean(message_data["hand_data"])
+                        logger.info(f"[{room_id}] 예측 결과: {prediction}")
                     except Exception as e:
                         logger.error(f"[{room_id}] 예측 오류: {e}")
                         prediction = "예측 실패"
 
                     for ws in list(rooms.get(room_id, [])):
                         try:
-                            # 좌표 정보 전달
-                            await ws.send_json({
-                                "client_id": "peer" if ws != websocket else "self",
-                                "hand_data": message_data
-                            })
-                            # 예측 결과 추가 전송
+                            # 예측 결과 전송
                             await ws.send_json({
                                 "type": "text",
                                 "client_id": "peer" if ws != websocket else "self",
