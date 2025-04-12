@@ -26,14 +26,11 @@ def ksl_to_korean(sequence: dict) -> str:
             zero_data = np.zeros((missing_rows, 3), dtype=np.float32)
             arr = np.vstack([arr, zero_data])
 
-        # 만약 3개의 특징을 225로 맞추려면 flatten 하거나 확장해야 함
-        arr = arr.flatten()  # (180,) 형태로 만듦
-        if arr.shape[0] < 225:
-            # 225개로 맞추기 위해 0으로 채우기
-            arr = np.pad(arr, (0, 225 - arr.shape[0]), 'constant')
+        # 만약 3개의 특징을 225로 맞추려면 reshape을 하여 (60, 225)로 만들어야 합니다
+        arr = np.reshape(arr, (1, 60, 225))  # 모델이 요구하는 (1, 60, 225) 형태로 변환
 
-        # 모델 입력 형태로 변환 (1, 225)
-        input_tensor = np.expand_dims(arr, axis=0)  # (1, 225)
+        # 모델 입력 형태로 변환 (1, 60, 225)
+        input_tensor = arr  # 이미 (1, 60, 225) 형태로 변환됨
         
         pred = model.predict(input_tensor)
         
