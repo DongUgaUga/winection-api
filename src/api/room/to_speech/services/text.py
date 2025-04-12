@@ -16,11 +16,17 @@ def ksl_to_korean(sequence: dict) -> str:
         pose_data = []
         for lm in pose:
             pose_data.append([lm['x'], lm['y'], lm['z']])
-        
+
         # pose_data가 60x3 shape 이어야 함
         arr = np.array(pose_data, dtype=np.float32)
 
-        # 모델 입력 형태로 변환 (60, 225)
+        # pose 데이터가 33개라면 나머지 27개를 0으로 채워서 (60, 3) 형태로 맞추기
+        if arr.shape[0] < 60:
+            missing_rows = 60 - arr.shape[0]
+            zero_data = np.zeros((missing_rows, 3), dtype=np.float32)
+            arr = np.vstack([arr, zero_data])
+
+        # 모델 입력 형태로 변환 (60, 225)으로 맞추기
         if arr.shape != (60, 3):
             raise ValueError(f"입력 shape은 (60, 3) 여야 합니다. 현재 shape: {arr.shape}")
         
