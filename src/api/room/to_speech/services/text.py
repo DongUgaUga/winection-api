@@ -28,6 +28,8 @@ def ksl_to_korean(sequence: dict) -> str:
 
         # 만약 3개의 특징을 225로 맞추려면 reshape을 하여 (60, 225)로 만들어야 합니다
         arr = np.reshape(arr, (1, 60, 225))  # 모델이 요구하는 (1, 60, 225) 형태로 변환
+        
+        print(f"변경된 데이터 shape: {arr.shape}")
 
         # 모델 입력 형태로 변환 (1, 60, 225)
         input_tensor = arr  # 이미 (1, 60, 225) 형태로 변환됨
