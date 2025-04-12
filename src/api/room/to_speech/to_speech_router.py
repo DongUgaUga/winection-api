@@ -1,11 +1,12 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from core.schemas.room_schema import WebSocketMessage
+from core.schemas import WebSocketMessage
 import json
-from core.log.logging import logger
-from src.api.room.to_speech.services.text import ksl_to_korean  # ← 예측 함수 import
+from core.logging import logger
+from src.api.room.to_speech.services.text import ksl_to_korean
 
 router = APIRouter()
 rooms = {}
+pending_signals = {}  # room_id -> list of (target_ws, message_json)
 MAX_ROOM_CAPACITY = 2
 
 def remove_client(websocket: WebSocket, room_id: str):
@@ -40,6 +41,18 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
         rooms[room_id] = []
     rooms[room_id].append(websocket)
 
+    # 재접속한 경우 본인에게 pending 메시지 재전송
+    if room_id in pending_signals:
+        for target_ws, message in pending_signals[room_id]:
+            if target_ws == websocket:
+                try:
+                    await websocket.send_text(message)
+                    logger.info(f"[{room_id}] pending 메시지 재전송됨")
+                except Exception as e:
+                    logger.error(f"[{room_id}] pending 재전송 실패: {e}")
+        # 해당 클라이언트에 대해 보낸 메시지는 제거
+        pending_signals[room_id] = [msg for msg in pending_signals[room_id] if msg[0] != websocket]
+
     try:
         while True:
             data = await websocket.receive_text()
@@ -49,7 +62,6 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
                 message_data = parsed.get("data")
 
                 if message_type == "land_mark":
-                    # 예측 시도
                     try:
                         prediction = ksl_to_korean(message_data["land_mark"])
                         logger.info(f"[{room_id}] 예측 결과: {prediction}")
@@ -59,14 +71,13 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
 
                     for ws in list(rooms.get(room_id, [])):
                         try:
-                            # 예측 결과 전송
                             await ws.send_json({
                                 "type": "text",
                                 "client_id": "peer" if ws != websocket else "self",
                                 "result": prediction
                             })
                         except Exception as e:
-                            logger.error(f"[{room_id}] 클라이언트 전송 오류: {e}")
+                            logger.error(f"[{room_id}] 예측 전송 실패: {e}")
                             remove_client(ws, room_id)
 
                 elif message_type in ["offer", "answer", "candidate"]:
@@ -79,7 +90,17 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
                                     "data": message_data
                                 }))
                             except Exception as e:
-                                logger.error(f"Room:[{room_id}] - WebRTC 시그널 전송 중 오류 발생: {e}")
+                                logger.error(f"Room:[{room_id}] - WebRTC 전송 실패: {e}")
+                                # 실패한 경우 큐에 저장
+                                if room_id not in pending_signals:
+                                    pending_signals[room_id] = []
+                                pending_signals[room_id].append((
+                                    ws,
+                                    json.dumps({
+                                        "type": message_type,
+                                        "data": message_data
+                                    })
+                                ))
                                 remove_client(ws, room_id)
 
                 elif message_type == "camera_state":
@@ -91,15 +112,18 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
                                 "data": message_data
                             })
                         except Exception as e:
-                            logger.error(f"카메라 상태 전송 실패: {e}")
-                
+                            logger.error(f"[{room_id}] 카메라 상태 전송 실패: {e}")
+
                 elif message_type == "mic_state":
                     for ws in rooms.get(room_id, []):
-                        await ws.send_json({
-                            "type": "mic_state",
-                            "client_id": "peer" if ws != websocket else "self",
-                            "data": message_data
-                        })
+                        try:
+                            await ws.send_json({
+                                "type": "mic_state",
+                                "client_id": "peer" if ws != websocket else "self",
+                                "data": message_data
+                            })
+                        except Exception as e:
+                            logger.error(f"[{room_id}] 마이크 상태 전송 실패: {e}")
 
                 else:
                     logger.warning(f"[{room_id}] 지원되지 않는 메시지 타입: {message_type}")
