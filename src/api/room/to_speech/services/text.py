@@ -22,6 +22,7 @@ def ksl_to_korean(sequence: dict) -> str:
 
         # 데이터 크기 확인
         print(f"원본 데이터 크기: {arr.shape}, 데이터 크기: {arr.size}")
+        print(f"Pose Data: {pose_data}")  # 추가된 로그
 
         # pose 데이터가 60개 미만이라면 0으로 채워서 (60, 3) 형태로 맞추기
         if arr.shape[0] < 60:
@@ -42,6 +43,8 @@ def ksl_to_korean(sequence: dict) -> str:
 
         # 데이터 크기 확인
         print(f"reshape 후 데이터 크기: {arr_expanded.shape}, 데이터 크기: {arr_expanded.size}")
+        print(f"Expanded Data: {arr_expanded}")  # 추가된 로그
+        print(f"Expanded Data shape: {arr_expanded.shape}")  # 추가된 로그
 
         # class_names 배열 값 출력
         print(f"class_names 배열 값: {class_names}")
