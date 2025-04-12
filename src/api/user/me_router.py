@@ -13,15 +13,30 @@ router = APIRouter()
             "description": "현재 로그인한 유저 정보",
             "content": {
                 "application/json": {
-                    "example": {
-                        "id": 1,
-                        "username": "woo1234",
-                        "nickname": "응급기관",
-                        "phone_number": "010-1234-5678",
-                        "user_type": "응급기관",
-                        "emergency_type": "병원",
-                        "address": "충남 천안시 동남구 병천면 충절로 1600",
-                        "organization_name": "한기대병원"
+                    "examples": {
+                        "일반 사용자": {
+                            "summary": "일반 사용자",
+                            "value": {
+                                "id": 1,
+                                "username": "woo1234",
+                                "nickname": "이동우",
+                                "phone_number": "010-1111-2222",
+                                "user_type": "일반인"
+                            }
+                        },
+                        "응급기관 사용자": {
+                            "summary": "응급기관 사용자",
+                            "value": {
+                                "id": 2,
+                                "username": "woo123",
+                                "nickname": "아파요",
+                                "phone_number": "010-1234-5678",
+                                "user_type": "응급기관",
+                                "emergency_type": "병원",
+                                "address": "충남 천안시 동남구 병천면 충절로 1600",
+                                "organization_name": "한기대병원"
+                            }
+                        }
                     }
                 }
             }
@@ -39,13 +54,19 @@ router = APIRouter()
     }
 )
 def read_current_user(current_user: User = Depends(get_current_user)):
-    return {
+    user_data = {
         "id": current_user.id,
         "username": current_user.username,
         "nickname": current_user.nickname,
         "phone_number": current_user.phone_number,
         "user_type": current_user.user_type,
-        "emergency_type": current_user.emergency_type,
-        "address": current_user.address,
-        "organization_name": current_user.organization_name,
     }
+
+    if current_user.user_type == "응급기관":
+        user_data.update({
+            "emergency_type": current_user.emergency_type,
+            "address": current_user.address,
+            "organization_name": current_user.organization_name
+        })
+
+    return user_data
