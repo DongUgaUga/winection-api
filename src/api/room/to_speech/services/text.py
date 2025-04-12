@@ -32,18 +32,19 @@ def ksl_to_korean(sequence: dict) -> str:
         # 데이터 크기 확인
         print(f"변경된 데이터 크기: {arr.shape}, 데이터 크기: {arr.size}")
 
-        # 각 좌표는 (x, y, z)로 3개씩 존재하므로 (60, 3)을 (60, 225)로 변환
+        # 3D 좌표 (x, y, z)마다 75씩 반복하여 (60, 225)로 만들어준다
         try:
-            arr = np.reshape(arr, (1, 60, 225))  # 모델이 요구하는 (1, 60, 225) 형태로 변환
+            arr_expanded = np.tile(arr, (1, 75))  # (60, 225)로 확장
+            arr_expanded = np.reshape(arr_expanded, (1, 60, 225))  # 모델이 요구하는 (1, 60, 225) 형태로 변환
         except Exception as e:
             print(f"reshape 오류 발생: {e}")
             raise RuntimeError(f"reshape 오류 발생: {e}")
 
         # 데이터 크기 확인
-        print(f"reshape 후 데이터 크기: {arr.shape}, 데이터 크기: {arr.size}")
+        print(f"reshape 후 데이터 크기: {arr_expanded.shape}, 데이터 크기: {arr_expanded.size}")
 
         # 모델 입력 형태로 변환 (1, 60, 225)
-        input_tensor = arr
+        input_tensor = arr_expanded
         
         pred = model.predict(input_tensor)
         
