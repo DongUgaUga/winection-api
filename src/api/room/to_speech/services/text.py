@@ -3,7 +3,7 @@ from tensorflow.keras.models import load_model
 
 # 모델 및 라벨 클래스 로드
 model = load_model("src/resources/ksl_cnn_lstm_model.h5")
-class_names = np.load("src/resources/class_names.npy")
+class_names = np.load("src/resources/class_names.npy", allow_pickle=True)
 
 def ksl_to_korean(sequence: dict) -> str:
     try:
