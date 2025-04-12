@@ -20,19 +20,27 @@ def ksl_to_korean(sequence: dict) -> str:
         # pose_data가 60x3 shape 이어야 함
         arr = np.array(pose_data, dtype=np.float32)
 
+        # 데이터 크기 확인
+        print(f"원본 데이터 크기: {arr.shape}, 데이터 크기: {arr.size}")
+
         # pose 데이터가 60개 미만이라면 0으로 채워서 (60, 3) 형태로 맞추기
         if arr.shape[0] < 60:
             missing_rows = 60 - arr.shape[0]
             zero_data = np.zeros((missing_rows, 3), dtype=np.float32)
             arr = np.vstack([arr, zero_data])
 
-        # 데이터의 shape 확인
-        print(f"변경된 데이터 shape: {arr.shape}")  # (60, 3)
+        # 데이터 크기 확인
+        print(f"변경된 데이터 크기: {arr.shape}, 데이터 크기: {arr.size}")
 
         # 각 좌표는 (x, y, z)로 3개씩 존재하므로 (60, 3)을 (60, 225)로 변환
-        arr = np.reshape(arr, (1, 60, 225))  # 모델이 요구하는 (1, 60, 225) 형태로 변환
-        
-        print(f"변경된 데이터 shape: {arr.shape}")  # (1, 60, 225)
+        try:
+            arr = np.reshape(arr, (1, 60, 225))  # 모델이 요구하는 (1, 60, 225) 형태로 변환
+        except Exception as e:
+            print(f"reshape 오류 발생: {e}")
+            raise RuntimeError(f"reshape 오류 발생: {e}")
+
+        # 데이터 크기 확인
+        print(f"reshape 후 데이터 크기: {arr.shape}, 데이터 크기: {arr.size}")
 
         # 모델 입력 형태로 변환 (1, 60, 225)
         input_tensor = arr
