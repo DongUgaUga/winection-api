@@ -20,19 +20,22 @@ def ksl_to_korean(sequence: dict) -> str:
         # pose_data가 60x3 shape 이어야 함
         arr = np.array(pose_data, dtype=np.float32)
 
-        # pose 데이터가 33개라면 나머지 27개를 0으로 채워서 (60, 3) 형태로 맞추기
+        # pose 데이터가 60개 미만이라면 0으로 채워서 (60, 3) 형태로 맞추기
         if arr.shape[0] < 60:
             missing_rows = 60 - arr.shape[0]
             zero_data = np.zeros((missing_rows, 3), dtype=np.float32)
             arr = np.vstack([arr, zero_data])
 
-        # 만약 3개의 특징을 225로 맞추려면 reshape을 하여 (60, 225)로 만들어야 합니다
+        # 데이터의 shape 확인
+        print(f"변경된 데이터 shape: {arr.shape}")  # (60, 3)
+
+        # 각 좌표는 (x, y, z)로 3개씩 존재하므로 (60, 3)을 (60, 225)로 변환
         arr = np.reshape(arr, (1, 60, 225))  # 모델이 요구하는 (1, 60, 225) 형태로 변환
         
-        print(f"변경된 데이터 shape: {arr.shape}")
+        print(f"변경된 데이터 shape: {arr.shape}")  # (1, 60, 225)
 
         # 모델 입력 형태로 변환 (1, 60, 225)
-        input_tensor = arr  # 이미 (1, 60, 225) 형태로 변환됨
+        input_tensor = arr
         
         pred = model.predict(input_tensor)
         
