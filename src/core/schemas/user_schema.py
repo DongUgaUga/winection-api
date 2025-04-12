@@ -33,7 +33,11 @@ class CurrentUserResponse(BaseModel):
     id: int = Field(..., example=1)
     username: str = Field(..., example="woo1234")
     nickname: str = Field(..., example="이동우")
-    user_type: str = Field(..., example="농인")
+    phone_number: str = Field(..., example="010-1111-2222")
+    user_type: str = Field(..., example="응급기관")
+    emergency_type: Optional[str] = Field(None, example="병원")
+    address: Optional[str] = Field(None, example="충남 천안시 동남구 병천면 충절로 1600")
+    organization_name: Optional[str] = Field(None, example="한기대병원")
 
 class LoginRequest(BaseModel):
     username: str = Field(example="woo1234")
