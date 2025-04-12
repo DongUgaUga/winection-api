@@ -44,4 +44,4 @@ class LoginRequest(BaseModel):
     password: str = Field(example="woo1234@")
 
 class LoginResponse(BaseModel):
-    token: str = Field(example="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ3b28xMjM0IiwiaWF0IjoxNjY2NTY4NzQwfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c")
+    token: str = Field(example="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0bWR3bjQzMjEiLCJleHAiOjE3NDQ0NjEyMjR9.n85SNI5ul_cKxluT4G3hl9td4Bu2L1Vk_tr2SXHI_f8")
