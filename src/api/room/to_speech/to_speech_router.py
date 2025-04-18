@@ -29,9 +29,7 @@ async def notify_peer_leave(websocket: WebSocket, room_id: str):
 @router.websocket("/ws/slts/{room_id}")
 async def websocket_endpoint(websocket: WebSocket, room_id: str):
     if room_id not in rooms:
-        await websocket.close(code=1003, reason="존재하지 않는 방입니다.")
-        logger.info(f"[{room_id}] 존재하지 않는 방으로의 접속 시도")
-        return
+        rooms[room_id] = []
 
     if len(rooms[room_id]) >= MAX_ROOM_CAPACITY:
         await websocket.close(code=1008, reason="Room full")
