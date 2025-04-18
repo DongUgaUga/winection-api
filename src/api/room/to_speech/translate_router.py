@@ -4,10 +4,14 @@ from src.api.room.to_speech.services.sentence import stop_word_to_sentence
 from src.api.room.to_speech.services.speech import text_to_speech
 from core.log.logging import logger
 
-router = APIRouter()
+router = APIRouter(
+    tags=["Translate"]
+)
 
 @router.post(
     "/translate",
+    summary="단어 → 문장 및 음성 변환",
+    description="단어 리스트를 자연스러운 문장으로 재구성한 후, 음성으로 변환하여 Base64 형식으로 반환합니다.",
     response_model=TranslationResponse,
     responses={
         200: {

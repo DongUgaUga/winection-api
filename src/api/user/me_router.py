@@ -3,10 +3,14 @@ from core.auth.models import User
 from core.auth.dependencies import get_current_user
 from core.schemas.user_schema import CurrentUserResponse
 
-router = APIRouter()
+router = APIRouter(
+    tags=["User"]
+)
 
 @router.get(
     "/me",
+    summary="현재 로그인한 사용자 조회",
+    description="요청한 JWT 토큰을 기준으로 현재 로그인한 사용자 정보를 반환합니다.",
     response_model=CurrentUserResponse,
     responses={
         200: {

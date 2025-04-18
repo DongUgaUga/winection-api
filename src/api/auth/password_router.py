@@ -2,18 +2,19 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from core.db.database import get_db
 from core.auth.models import User
-from core.schemas.user_schema import (
-    ResetPasswordCheckRequest,
-    ResetPasswordRequest,
-    MessageResponse
-)
+from core.schemas.user_schema import ResetPasswordCheckRequest, ResetPasswordRequest, MessageResponse
 from core.validators.user_validators import validate_password
 from core.auth.security import hash_password
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/password",
+    tags=["Password"]
+)
 
 @router.post(
-    "/password/find",
+    "/find",
+    summary="비밀번호 재설정 가능 여부 확인",
+    description="아이디와 전화번호를 입력받아 비밀번호 재설정이 가능한지 확인합니다.",
     response_model=MessageResponse,
     responses={
         200: {
@@ -47,7 +48,9 @@ def find_password(data: ResetPasswordCheckRequest, db: Session = Depends(get_db)
 
 
 @router.patch(
-    "/password/reset",
+    "/reset",
+    summary="비밀번호 재설정",
+    description="아이디와 새 비밀번호 정보를 입력받아 비밀번호를 변경합니다.",
     response_model=MessageResponse,
     responses={
         200: {

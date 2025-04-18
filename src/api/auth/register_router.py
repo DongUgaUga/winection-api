@@ -7,10 +7,14 @@ from core.schemas.user_schema import RegisterRequest, MessageResponse
 from core.validators.user_validators import validate_register, validate_nickname
 from core.auth.security import hash_password
 
-router = APIRouter()
+router = APIRouter(
+    tags=["Register"]  # Swagger 그룹만 사용
+)
 
 @router.post(
     "/register",
+    summary="회원가입",
+    description="입력받은 정보로 신규 사용자를 등록합니다. 입력값 유효성과 중복 여부를 검사합니다.",
     response_model=MessageResponse,
     status_code=201,
     responses={
@@ -34,7 +38,7 @@ router = APIRouter()
 )
 def register_user(request: RegisterRequest, db: Session = Depends(get_db)):
     try:
-        validate_register(request, db)  # 검증 로직을 여기에서 호출
+        validate_register(request, db)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -59,6 +63,8 @@ def register_user(request: RegisterRequest, db: Session = Depends(get_db)):
 
 @router.get(
     "/register/nickname",
+    summary="닉네임 중복 확인",
+    description="입력한 닉네임이 이미 존재하는지 확인합니다.",
     response_model=MessageResponse,
     responses={
         200: {
@@ -81,7 +87,7 @@ def register_user(request: RegisterRequest, db: Session = Depends(get_db)):
 )
 def check_nickname(nickname: str, db: Session = Depends(get_db)):
     try:
-        validate_nickname(nickname, db)  # 닉네임 중복 확인
+        validate_nickname(nickname, db)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     return {"message": "사용 가능한 닉네임입니다."}
