@@ -29,7 +29,12 @@ async def notify_peer_leave(websocket: WebSocket, room_id: str):
 
 @router.websocket("/ws/slts/{room_id}")
 async def websocket_endpoint(websocket: WebSocket, room_id: str):
-    if room_id in rooms and len(rooms[room_id]) >= MAX_ROOM_CAPACITY:
+    if room_id not in rooms:
+        await websocket.close(code=1003, reason="존재하지 않는 방입니다.")
+        logger.info(f"[{room_id}] 존재하지 않는 방으로의 접속 시도")
+        return
+
+    if len(rooms[room_id]) >= MAX_ROOM_CAPACITY:
         await websocket.close(code=1008, reason="Room full")
         logger.info(f"[{room_id}] 방 인원 초과로 접속 거부됨")
         return
@@ -37,11 +42,8 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
     await websocket.accept()
     logger.info(f"Client가 Room:[{room_id}]에 접속했습니다.")
 
-    if room_id not in rooms:
-        rooms[room_id] = []
     rooms[room_id].append(websocket)
 
-    # 재접속한 경우 본인에게 pending 메시지 재전송
     if room_id in pending_signals:
         for target_ws, message in pending_signals[room_id]:
             if target_ws == websocket:
@@ -50,7 +52,6 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
                     logger.info(f"[{room_id}] pending 메시지 재전송됨")
                 except Exception as e:
                     logger.error(f"[{room_id}] pending 재전송 실패: {e}")
-        # 해당 클라이언트에 대해 보낸 메시지는 제거
         pending_signals[room_id] = [msg for msg in pending_signals[room_id] if msg[0] != websocket]
 
     try:
@@ -91,7 +92,6 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
                                 }))
                             except Exception as e:
                                 logger.error(f"Room:[{room_id}] - WebRTC 전송 실패: {e}")
-                                # 실패한 경우 큐에 저장
                                 if room_id not in pending_signals:
                                     pending_signals[room_id] = []
                                 pending_signals[room_id].append((
