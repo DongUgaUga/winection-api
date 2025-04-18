@@ -105,6 +105,7 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
                 elif message_type == "camera_state":
                     for ws in rooms.get(room_id, []):
                         try:
+                            logger.info(f"[{room_id}] 카메라 상태: {message_data}")
                             await ws.send_json({
                                 "type": "camera_state",
                                 "client_id": "peer" if ws != websocket else "self",
@@ -116,6 +117,7 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
                 elif message_type == "mic_state":
                     for ws in rooms.get(room_id, []):
                         try:
+                            logger.info(f"[{room_id}] 마이크 상태: {message_data}")
                             await ws.send_json({
                                 "type": "mic_state",
                                 "client_id": "peer" if ws != websocket else "self",
