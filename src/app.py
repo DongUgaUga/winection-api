@@ -20,7 +20,6 @@ app = FastAPI(
     version="0.1"
 )
 
-
 add_cors_middleware(app)
 
 app.openapi = lambda: custom_openapi(app)
@@ -36,5 +35,3 @@ app.include_router(room_router.router)
 app.include_router(translate_router.router)
 app.include_router(to_speech_router.router)
 app.include_router(to_sign_router.router)
-
-# uvicorn src.app:app --host 0.0.0.0 --port 9090 --reload --reload-dir src --ssl-keyfile ./mkcert/key.pem --ssl-certfile ./mkcert/cert.pem
