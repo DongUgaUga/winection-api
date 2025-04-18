@@ -15,6 +15,11 @@ services:
       - db-data:/var/lib/mysql
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   api:
     build:
@@ -24,12 +29,16 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     env_file: .env
     networks:
       - app-network
     restart: unless-stopped
-    command: ["/wait-for-it.sh", "db:3306", "--timeout=120", "--", "uvicorn", "src.app:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--reload-dir", "src"]
+    command: [
+      "/wait-for-it.sh", "db:3306", "--timeout=120", "--",
+      "uvicorn", "src.app:app", "--host", "0.0.0.0", "--port", "8000"
+    ]
 
 networks:
   app-network:

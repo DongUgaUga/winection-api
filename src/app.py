@@ -5,9 +5,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SRC_DIR = os.path.abspath(os.path.join(BASE_DIR))
 sys.path.append(SRC_DIR)
 
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
-
 from core.config.cors_config import add_cors_middleware
 from core.config.swagger_config import custom_openapi
 from api.auth import login_router, register_router, password_router
@@ -22,21 +20,21 @@ app = FastAPI(
     version="0.1"
 )
 
+
 add_cors_middleware(app)
 
 app.openapi = lambda: custom_openapi(app)
 
+# 라우터
 app.include_router(register_router.router)
 app.include_router(login_router.router)
 app.include_router(me_router.router)
 
 app.include_router(password_router.router)
 
-
 app.include_router(room_router.router)
 app.include_router(translate_router.router)
 app.include_router(to_speech_router.router)
 app.include_router(to_sign_router.router)
-
 
 # uvicorn src.app:app --host 0.0.0.0 --port 9090 --reload --reload-dir src --ssl-keyfile ./mkcert/key.pem --ssl-certfile ./mkcert/cert.pem
