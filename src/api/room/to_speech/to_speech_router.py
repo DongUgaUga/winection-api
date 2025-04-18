@@ -42,14 +42,13 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
     rooms[room_id].append(websocket)
 
     if room_id in pending_signals:
-        for target_ws, message in pending_signals[room_id]:
-            if target_ws == websocket:
-                try:
-                    await websocket.send_text(message)
-                    logger.info(f"[{room_id}] pending 메시지 재전송됨")
-                except Exception as e:
-                    logger.error(f"[{room_id}] pending 재전송 실패: {e}")
-        pending_signals[room_id] = [msg for msg in pending_signals[room_id] if msg[0] != websocket]
+        for _, message in pending_signals[room_id]:
+            try:
+                await websocket.send_text(message)
+                logger.info(f"[{room_id}] pending 메시지 재전송됨")
+            except Exception as e:
+                logger.error(f"[{room_id}] pending 재전송 실패: {e}")
+        del pending_signals[room_id]
 
     try:
         while True:
