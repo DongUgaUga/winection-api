@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from core.schemas.room_schema import TranslationRequest, TranslationResponse
-from src.api.room.to_speech.services.sentence import stop_word_to_sentence
-from src.api.room.to_speech.services.speech import text_to_speech
+from api.room.to_speech.services.text_to_sentence import stop_word_to_sentence
+from api.room.to_speech.services.sentence_to_speech import text_to_speech
 from core.log.logging import logger
 
 router = APIRouter(

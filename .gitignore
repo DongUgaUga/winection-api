@@ -7,3 +7,5 @@ logs
 mkcert
 conf
 winection.sh
+__pycache__
+.vscode
