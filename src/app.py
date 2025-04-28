@@ -22,6 +22,9 @@ app = FastAPI(
 
 add_cors_middleware(app)
 
+app.state.rooms = {}
+app.state.pending_signals = {}
+
 app.openapi = lambda: custom_openapi(app)
 
 # 라우터

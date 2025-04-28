@@ -1,8 +1,6 @@
 import random
 import string
-from fastapi import APIRouter
-from fastapi.responses import JSONResponse
-from api.room.to_speech.to_speech_router import rooms
+from fastapi import APIRouter, Request
 from core.schemas.room_schema import CreateRoomResponse
 
 router = APIRouter(
@@ -29,10 +27,14 @@ def generate_room_code(length=6):
         }
     }
 )
-async def create_room():
+async def create_room(request: Request):
+    rooms = request.app.state.rooms
+    pending = request.app.state.pending_signals
+    # 새로운 방 ID 생성
     while True:
         room_id = generate_room_code()
         if room_id not in rooms:
-            rooms[room_id] = []
+            rooms[room_id] = []           # 방 생성과 동시에
+            pending[room_id] = []         # pending_signals 도 초기화
             break
     return {"room_id": room_id}

@@ -1,130 +1,134 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from pydantic import ValidationError
-from core.schemas.room_schema import WebSocketMessage
+import json
 from core.log.logging import logger
 from src.api.room.to_speech.services.sign_to_text import ksl_to_korean
 
 router = APIRouter()
-rooms: dict[str, list[WebSocket]] = {}
-pending_signals: dict[str, list[tuple[WebSocket, dict]]] = {}
 MAX_ROOM_CAPACITY = 2
 
 def remove_client(ws: WebSocket, room_id: str):
+    rooms = ws.app.state.rooms
     if ws in rooms.get(room_id, []):
         rooms[room_id].remove(ws)
-        if not rooms[room_id]:
-            del rooms[room_id]
+        #if not rooms[room_id]:
+            #del rooms[room_id]
 
 async def notify_peer_leave(ws: WebSocket, room_id: str):
-    for peer in rooms.get(room_id, []):
-        if peer is not ws:
+    rooms = ws.app.state.rooms
+    for peer in list(rooms.get(room_id, [])):
+        if peer != ws:
             try:
                 await peer.send_json({"type": "leave", "client_id": "peer"})
             except Exception as e:
-                logger.error(f"[{room_id}] leave 전송 실패: {e}")
+                logger.error(f"[{room_id}] leave 알림 전송 실패: {e}")
                 remove_client(peer, room_id)
-
-async def broadcast_signal(sender: WebSocket, room_id: str, msg_type: str, data: dict):
-    for peer in list(rooms.get(room_id, [])):
-        if peer is not sender:
-            try:
-                await peer.send_json({"type": msg_type, "data": data})
-            except Exception:
-                # 실패한 피어는 pending에 저장 후 제거
-                pending_signals.setdefault(room_id, []).append((peer, {"type": msg_type, "data": data}))
-                remove_client(peer, room_id)
-
-async def broadcast_media_state(sender: WebSocket, room_id: str, state_type: str, data: dict):
-    for peer in list(rooms.get(room_id, [])):
-        try:
-            await peer.send_json({
-                "type": state_type,
-                "client_id": "peer" if peer is not sender else "self",
-                "data": data
-            })
-        except Exception as e:
-            logger.error(f"[{room_id}] {state_type} 전송 실패: {e}")
-            remove_client(peer, room_id)
-
-async def broadcast_start_call(room_id: str, nickname: str, start_time: str):
-    for peer in rooms.get(room_id, []):
-        try:
-            await peer.send_json({
-                "type": "startCall",
-                "data": {"nickname": nickname, "startTime": start_time}
-            })
-        except Exception as e:
-            logger.error(f"[{room_id}] startCall 전송 실패: {e}")
-
-async def broadcast_landmark(sender: WebSocket, room_id: str, landmark):
-    try:
-        result = ksl_to_korean(landmark)
-    except Exception as e:
-        logger.error(f"[{room_id}] 예측 오류: {e}")
-        result = "예측 실패"
-
-    for peer in list(rooms.get(room_id, [])):
-        try:
-            await peer.send_json({
-                "type": "text",
-                "client_id": "peer" if peer is not sender else "self",
-                "result": result
-            })
-        except Exception as e:
-            logger.error(f"[{room_id}] 텍스트 전송 실패: {e}")
-            remove_client(peer, room_id)
 
 @router.websocket("/ws/slts/{room_id}")
 async def websocket_endpoint(ws: WebSocket, room_id: str):
+    rooms = ws.app.state.rooms
+    pending = ws.app.state.pending_signals
     if room_id not in rooms:
-        rooms[room_id] = []
+        await ws.close(code=1003, reason="존재하지 않는 방입니다.")
+        logger.info(f"[{room_id}] 존재하지 않는 방으로의 접속 시도")
+        return
+
     if len(rooms[room_id]) >= MAX_ROOM_CAPACITY:
         await ws.close(code=1008, reason="Room full")
         logger.info(f"[{room_id}] 방 인원 초과로 접속 거부됨")
         return
 
     await ws.accept()
+    logger.info(f"Client가 Room:[{room_id}]에 접속했습니다.")
     rooms[room_id].append(ws)
-    logger.info(f"[{room_id}] 클라이언트 접속 (총 {len(rooms[room_id])}명)")
 
-    if room_id in pending_signals:
-        for peer, msg in pending_signals.pop(room_id):
+    if len(rooms[room_id]) == MAX_ROOM_CAPACITY:
+        for idx, peer in enumerate(rooms[room_id]):
+            payload = {
+                "type": "ready",
+                "isInitiator": idx == 0
+            }
             try:
-                await peer.send_json(msg)
-                logger.info(f"[{room_id}] pending 메시지 재전송")
+                await peer.send_json(payload)
+                logger.info(f"[{room_id}] ready 전송 (isInitiator={idx==0})")
             except Exception as e:
-                logger.error(f"[{room_id}] pending 재전송 실패: {e}")
+                logger.error(f"[{room_id}] ready 전송 실패: {e}")
+
+    if room_id in pending:
+        for target_ws, msg in pending[room_id]:
+            if target_ws == ws:
+                try:
+                    await ws.send_text(msg)
+                    logger.info(f"[{room_id}] pending 메시지 재전송됨")
+                except Exception as e:
+                    logger.error(f"[{room_id}] pending 재전송 실패: {e}")
+        del pending[room_id]
 
     try:
         while True:
-            raw = await ws.receive_text()
+            data = await ws.receive_text()
+            parsed = json.loads(data)
+            t = parsed.get("type")
+            d = parsed.get("data")
 
-            try:
-                msg = WebSocketMessage.parse_raw(raw)
-            except ValidationError as e:
-                logger.error(f"[{room_id}] 메시지 검증 실패: {e}")
-                continue
+            if t == "land_mark":
+                try:
+                    prediction = ksl_to_korean(d["land_mark"])
+                except Exception:
+                    prediction = "예측 실패"
+                for peer in list(rooms.get(room_id, [])):
+                    try:
+                        await peer.send_json({
+                            "type": "text",
+                            "client_id": "peer" if peer != ws else "self",
+                            "result": prediction
+                        })
+                    except Exception as e:
+                        logger.error(f"[{room_id}] 예측 전송 실패: {e}")
+                        remove_client(peer, room_id)
 
-            t, d = msg.type, msg.data
-            if t in ("offer", "answer", "candidate"):
-                await broadcast_signal(ws, room_id, t, d)
-            elif t == "startCall":
-                nick = d.get("nickname"); st = d.get("startTime")
-                logger.info(f"[{room_id}] startCall: {nick} @ {st}")
-                await broadcast_start_call(room_id, nick, st)
-            elif t in ("camera_state", "mic_state"):
-                await broadcast_media_state(ws, room_id, t, d)
-            elif t == "land_mark":
-                await broadcast_landmark(ws, room_id, d.get("land_mark"))
+            elif t in ["offer", "answer", "candidate"]:
+                logger.info(f"Room:[{room_id}] - WebRTC 메시지: {t}")
+                payload = json.dumps({"type": t, "data": d})
+                for peer in list(rooms.get(room_id, [])):
+                    if peer != ws:
+                        try:
+                            await peer.send_text(payload)
+                        except Exception as e:
+                            logger.error(f"[{room_id}] WebRTC 전송 실패: {e}")
+                            pending.setdefault(room_id, []).append((peer, payload))
+                            remove_client(peer, room_id)
+
+            elif t == "camera_state":
+                for peer in rooms.get(room_id, []):
+                    try:
+                        await peer.send_json({
+                            "type": "camera_state",
+                            "client_id": "peer" if peer != ws else "self",
+                            "data": d
+                        })
+                    except Exception as e:
+                        logger.error(f"[{room_id}] 카메라 상태 전송 실패: {e}")
+
+            elif t == "mic_state":
+                for peer in rooms.get(room_id, []):
+                    try:
+                        await peer.send_json({
+                            "type": "mic_state",
+                            "client_id": "peer" if peer != ws else "self",
+                            "data": d
+                        })
+                    except Exception as e:
+                        logger.error(f"[{room_id}] 마이크 상태 전송 실패: {e}")
+
             else:
-                logger.warning(f"[{room_id}] 알 수 없는 메시지 타입: {t}")
-                continue
+                logger.warning(f"[{room_id}] 지원되지 않는 메시지 타입: {t}")
 
     except WebSocketDisconnect:
-        logger.info(f"[{room_id}] 클라이언트 연결 종료")
-    except Exception as e:
-        logger.error(f"[{room_id}] WebSocket 처리 오류: {e}")
-    finally:
+        logger.info(f"Client가 Room:[{room_id}]에서 나갔습니다.")
         await notify_peer_leave(ws, room_id)
         remove_client(ws, room_id)
-        logger.info(f"[{room_id}] 클라이언트 제거 (남은 {len(rooms.get(room_id, []))}명)")
+
+    except Exception as e:
+        logger.error(f"[{room_id}] websocket 처리 오류: {e}")
+        await notify_peer_leave(ws, room_id)
+        remove_client(ws, room_id)
