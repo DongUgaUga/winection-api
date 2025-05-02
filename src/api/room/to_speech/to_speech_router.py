@@ -1,21 +1,52 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
 import json
 from core.log.logging import logger
 from src.api.room.to_speech.services.sign_to_text import ksl_to_korean
+import jwt
+from jwt import PyJWTError
+from core.db.database import SessionLocal
+from core.auth.models import User
+from core.auth.dependencies import SECRET_KEY, ALGORITHM
+from datetime import datetime
 
 router = APIRouter()
 
 MAX_ROOM_CAPACITY = 4
 
 camera_refresh_tracker: dict[str, dict] = {}
-
 client_labels: dict[WebSocket, str] = {}
+
+user_nicknames: dict[WebSocket, str] = {}
+user_types: dict[WebSocket, str] = {}
+room_call_start_time: dict[str, str] = {}
+
+def get_user_info_from_token(token: str) -> str:
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username = payload.get("sub")
+        if not username:
+            raise ValueError("유효하지 않은 토큰입니다 (sub 없음)")
+
+        db = SessionLocal()
+        user = db.query(User).filter(User.username == username).first()
+        db.close()
+
+        if user is None:
+            raise ValueError("해당 유저를 찾을 수 없습니다")
+
+        return {
+            "nickname": user.nickname,
+            "user_type": user.user_type
+        } 
+    except PyJWTError:
+        raise ValueError("유효하지 않은 토큰입니다 (JWT 에러)")
 
 def remove_client(ws: WebSocket, room_id: str):
     rooms = ws.app.state.rooms
     if ws in rooms.get(room_id, []):
         rooms[room_id].remove(ws)
     client_labels.pop(ws, None)
+    user_nicknames.pop(ws, None) 
 
 async def notify_peer_leave(ws: WebSocket, room_id: str):
     rooms = ws.app.state.rooms
@@ -28,13 +59,25 @@ async def notify_peer_leave(ws: WebSocket, room_id: str):
                 remove_client(peer, room_id)
 
 @router.websocket("/ws/slts/{room_id}")
-async def websocket_endpoint(ws: WebSocket, room_id: str):
+async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...)):
+    try:
+        user_info = get_user_info_from_token(token)
+        nickname = user_info["nickname"]
+        user_type = user_info["user_type"]
+    except ValueError as e:
+        await ws.close(code=1008, reason=str(e))
+        logger.warning(f"[{room_id}] WebSocket 인증 실패: {e}")
+        return
+    
     rooms = ws.app.state.rooms
     pending = ws.app.state.pending_signals
 
     if room_id not in rooms:
-        await ws.close(code=1003, reason="존재하지 않는 방입니다.")
-        logger.info(f"[{room_id}] 존재하지 않는 방으로의 접속 시도")
+        rooms[room_id] = []
+        logger.info(f"[{room_id}] 새 방이 생성되었습니다.")
+        
+        #await ws.close(code=1003, reason="존재하지 않는 방입니다.")
+        #logger.info(f"[{room_id}] 존재하지 않는 방으로의 접속 시도")
         return
 
     if len(rooms[room_id]) >= MAX_ROOM_CAPACITY:
@@ -46,6 +89,8 @@ async def websocket_endpoint(ws: WebSocket, room_id: str):
     rooms[room_id].append(ws)
     label = "self" if len(rooms[room_id]) == 1 else "peer"
     client_labels[ws] = label
+    user_nicknames[ws] = nickname
+    user_types[ws] = user_type
     logger.info(f"👤 [{label}] Room:[{room_id}]에 접속했습니다. (현재 인원: {len(rooms[room_id])})")
 
     if room_id in pending:
@@ -59,12 +104,13 @@ async def websocket_endpoint(ws: WebSocket, room_id: str):
         del pending[room_id]
 
     if room_id in camera_refresh_tracker:
-        meta = camera_refresh_tracker[room_id]
         try:
             await ws.send_json({
                 "type": "startCall",
-                "client_id": client_labels[ws],
-                "data": meta
+                "client_id": "peer" if peer != ws else "self",
+                "nickname": user_nicknames.get(ws, "알 수 없음"),
+                "user_type": user_types.get(ws, "일반"),
+                "started_at": room_call_start_time[room_id]
             })
             logger.info(f"[{room_id}] startCall 메타 재전송됨")
         except Exception as e:
@@ -117,18 +163,20 @@ async def websocket_endpoint(ws: WebSocket, room_id: str):
                         logger.error(f"[{room_id}] 상태 전송 실패({t}): {e}")
 
             elif t == "startCall":
-                camera_refresh_tracker[room_id] = d
+                room_call_start_time[room_id] = datetime.now().isoformat() 
 
                 for peer in rooms[room_id]:
                     try:
                         await peer.send_json({
                             "type": "startCall",
-                            "client_id": client_labels[peer],
-                            "data": d
+                            "client_id": "peer" if peer != ws else "self",
+                            "nickname": user_nicknames.get(ws, "알 수 없음"),
+                            "user_type": user_types.get(ws, "일반인"), 
+                            "started_at": room_call_start_time[room_id]
                         })
                     except Exception as e:
                         logger.error(f"[{room_id}] startCall 전송 실패: {e}")
-                        remove_client(peer, room_id)
+                        #remove_client(peer, room_id)
 
             else:
                 logger.warning(f"[{room_id}] 지원되지 않는 메시지 타입: {t}")
