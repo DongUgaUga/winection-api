@@ -5,7 +5,7 @@ from src.api.room.to_speech.services.sign_to_text import ksl_to_korean
 
 router = APIRouter()
 
-MAX_ROOM_CAPACITY = 2
+MAX_ROOM_CAPACITY = 4
 
 camera_refresh_tracker: dict[str, dict] = {}
 
