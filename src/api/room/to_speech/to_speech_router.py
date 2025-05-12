@@ -1,13 +1,17 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
 import json
+import asyncio
+from datetime import datetime, timedelta
+
 from core.log.logging import logger
 from src.api.room.to_speech.services.sign_to_text import ksl_to_korean
+from src.api.room.to_speech.services.text_to_sentence import words_to_sentence
+
 import jwt
 from jwt import PyJWTError
 from core.db.database import SessionLocal
 from core.auth.models import User
 from core.auth.dependencies import SECRET_KEY, ALGORITHM
-from datetime import datetime
 
 router = APIRouter()
 
@@ -15,12 +19,37 @@ MAX_ROOM_CAPACITY = 4
 
 camera_refresh_tracker: dict[str, dict] = {}
 client_labels: dict[WebSocket, str] = {}
-
 user_nicknames: dict[WebSocket, str] = {}
 user_types: dict[WebSocket, str] = {}
 room_call_start_time: dict[str, str] = {}
+prev_predictions: dict[WebSocket, str] = {}
+user_words: dict[WebSocket, list] = {}
+last_prediction_time: dict[WebSocket, datetime] = {}
 
-prev_predictions: dict[WebSocket, str] = {}  # 🔁 이전 예측 결과 저장
+async def monitor_prediction_timeout(ws: WebSocket, room_id: str):
+    while True:
+        await asyncio.sleep(1)
+        if ws not in last_prediction_time:
+            continue
+
+        elapsed = datetime.utcnow() - last_prediction_time[ws]
+        if elapsed.total_seconds() >= 3:
+            words = user_words.get(ws, [])
+            if words:
+                sentence = words_to_sentence(words)
+                logger.info(f"[{room_id}] 📝 문장 생성됨: {sentence}")
+                for peer in ws.app.state.rooms.get(room_id, []):
+                    try:
+                        await peer.send_json({
+                            "type": "sentence",
+                            "client_id": "peer" if peer != ws else "self",
+                            "result": sentence
+                        })
+                    except Exception as e:
+                        logger.error(f"[{room_id}] 문장 전송 실패: {e}")
+                user_words[ws] = []
+                last_prediction_time[ws] = datetime.utcnow()
+
 
 def get_user_info_from_token(token: str) -> str:
     try:
@@ -43,12 +72,17 @@ def get_user_info_from_token(token: str) -> str:
     except PyJWTError:
         raise ValueError("유효하지 않은 토큰입니다 (JWT 에러)")
 
+
 def remove_client(ws: WebSocket, room_id: str):
     rooms = ws.app.state.rooms
     if ws in rooms.get(room_id, []):
         rooms[room_id].remove(ws)
     client_labels.pop(ws, None)
-    user_nicknames.pop(ws, None) 
+    user_nicknames.pop(ws, None)
+    user_words.pop(ws, None)
+    last_prediction_time.pop(ws, None)
+    prev_predictions.pop(ws, None)
+
 
 async def notify_peer_leave(ws: WebSocket, room_id: str):
     rooms = ws.app.state.rooms
@@ -60,6 +94,7 @@ async def notify_peer_leave(ws: WebSocket, room_id: str):
                 logger.error(f"[{room_id}] leave 알림 전송 실패: {e}")
                 remove_client(peer, room_id)
 
+
 @router.websocket("/ws/slts/{room_id}")
 async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...)):
     try:
@@ -70,17 +105,13 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
         await ws.close(code=1008, reason=str(e))
         logger.warning(f"[{room_id}] WebSocket 인증 실패: {e}")
         return
-    
+
     rooms = ws.app.state.rooms
     pending = ws.app.state.pending_signals
 
     if room_id not in rooms:
         rooms[room_id] = []
         logger.info(f"[{room_id}] 새 방이 생성되었습니다.")
-        
-        #await ws.close(code=1003, reason="존재하지 않는 방입니다.")
-        #logger.info(f"[{room_id}] 존재하지 않는 방으로의 접속 시도")
-        return
 
     if len(rooms[room_id]) >= MAX_ROOM_CAPACITY:
         await ws.close(code=1008, reason="Room full")
@@ -93,30 +124,11 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
     client_labels[ws] = label
     user_nicknames[ws] = nickname
     user_types[ws] = user_type
+    user_words[ws] = []
+    last_prediction_time[ws] = datetime.utcnow()
     logger.info(f"👤 [{label}] Room:[{room_id}]에 접속했습니다. (현재 인원: {len(rooms[room_id])})")
 
-    if room_id in pending:
-        for target_ws, msg in pending[room_id]:
-            if target_ws == ws:
-                try:
-                    await ws.send_text(msg)
-                    logger.info(f"[{room_id}] pending 메시지 재전송됨")
-                except Exception as e:
-                    logger.error(f"[{room_id}] pending 재전송 실패: {e}")
-        del pending[room_id]
-
-    if room_id in camera_refresh_tracker:
-        try:
-            await ws.send_json({
-                "type": "startCall",
-                "client_id": "peer" if peer != ws else "self",
-                "nickname": user_nicknames.get(ws, "알 수 없음"),
-                "user_type": user_types.get(ws, "일반"),
-                "started_at": room_call_start_time[room_id]
-            })
-            logger.info(f"[{room_id}] startCall 메타 재전송됨")
-        except Exception as e:
-            logger.error(f"[{room_id}] startCall 재전송 실패: {e}")
+    asyncio.create_task(monitor_prediction_timeout(ws, room_id))
 
     try:
         while True:
@@ -124,27 +136,30 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
             parsed = json.loads(data)
             t = parsed.get("type")
             d = parsed.get("data")
-            # logger.info(f"[{room_id}] 📥 수신한 land_mark raw 데이터: {json.dumps(d)}")
+
             if t == "land_mark":
                 try:
-                    logger.debug(f"[{room_id}] 📥 수신한 land_mark raw 데이터: {json.dumps(d)}")
                     prediction = ksl_to_korean(d)
                 except Exception as e:
                     logger.exception(f"[{room_id}] 예측 중 예외 발생: {e}")
-                    prediction = "예측 실패"
+                    prediction = ""
+
                 prev = prev_predictions.get(ws, "")
                 if prediction != "" and prediction != prev:
-                    prev_predictions[ws] = prediction  # 업데이트
-                for peer in list(rooms[room_id]):
-                    try:
-                        await peer.send_json({
-                            "type": "text",
-                            "client_id": "peer" if peer != ws else "self",
-                            "result": prediction
-                        })
-                    except Exception as e:
-                        logger.error(f"[{room_id}] 예측 전송 실패: {e}")
-                        remove_client(peer, room_id)
+                    prev_predictions[ws] = prediction
+                    user_words[ws].append(prediction)
+                    last_prediction_time[ws] = datetime.utcnow()
+
+                    for peer in list(rooms[room_id]):
+                        try:
+                            await peer.send_json({
+                                "type": "text",
+                                "client_id": "peer" if peer != ws else "self",
+                                "result": prediction
+                            })
+                        except Exception as e:
+                            logger.error(f"[{room_id}] 예측 전송 실패: {e}")
+                            remove_client(peer, room_id)
 
             elif t in ["offer", "answer", "candidate"]:
                 logger.info(f"Room:[{room_id}] - {client_labels[ws]} → WebRTC 메시지: {t}")
@@ -170,20 +185,18 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
                         logger.error(f"[{room_id}] 상태 전송 실패({t}): {e}")
 
             elif t == "startCall":
-                room_call_start_time[room_id] = datetime.now().isoformat() 
-
+                room_call_start_time[room_id] = datetime.utcnow().isoformat()
                 for peer in rooms[room_id]:
                     try:
                         await peer.send_json({
                             "type": "startCall",
                             "client_id": "peer" if peer != ws else "self",
                             "nickname": user_nicknames.get(ws, "알 수 없음"),
-                            "user_type": user_types.get(ws, "일반인"), 
+                            "user_type": user_types.get(ws, "일반인"),
                             "started_at": room_call_start_time[room_id]
                         })
                     except Exception as e:
                         logger.error(f"[{room_id}] startCall 전송 실패: {e}")
-                        #remove_client(peer, room_id)
 
             else:
                 logger.warning(f"[{room_id}] 지원되지 않는 메시지 타입: {t}")
