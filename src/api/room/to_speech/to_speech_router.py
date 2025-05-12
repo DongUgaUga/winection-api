@@ -20,6 +20,8 @@ user_nicknames: dict[WebSocket, str] = {}
 user_types: dict[WebSocket, str] = {}
 room_call_start_time: dict[str, str] = {}
 
+prev_predictions: dict[WebSocket, str] = {}  # 🔁 이전 예측 결과 저장
+
 def get_user_info_from_token(token: str) -> str:
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -122,12 +124,17 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
             parsed = json.loads(data)
             t = parsed.get("type")
             d = parsed.get("data")
-
+            # logger.info(f"[{room_id}] 📥 수신한 land_mark raw 데이터: {json.dumps(d)}")
             if t == "land_mark":
                 try:
-                    prediction = ksl_to_korean(d["land_mark"])
-                except Exception:
+                    logger.debug(f"[{room_id}] 📥 수신한 land_mark raw 데이터: {json.dumps(d)}")
+                    prediction = ksl_to_korean(d)
+                except Exception as e:
+                    logger.exception(f"[{room_id}] 예측 중 예외 발생: {e}")
                     prediction = "예측 실패"
+                prev = prev_predictions.get(ws, "")
+                if prediction != "" and prediction != prev:
+                    prev_predictions[ws] = prediction  # 업데이트
                 for peer in list(rooms[room_id]):
                     try:
                         await peer.send_json({
