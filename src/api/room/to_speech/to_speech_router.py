@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 from core.log.logging import logger
 from src.api.room.to_speech.services.sign_to_text import ksl_to_korean
-from src.api.room.to_speech.services.text_to_sentence import words_to_sentence
+from src.api.room.to_speech.services.text_to_sentence import words_to_sentence, stop_words_to_sentence
 
 import jwt
 from jwt import PyJWTError
@@ -85,7 +85,7 @@ async def monitor_prediction_timeout(ws: WebSocket, room_id: str):
         if elapsed.total_seconds() >= 3:
             words = user_words.get(ws, [])
             if words:
-                sentence = words_to_sentence(words)
+                sentence = stop_words_to_sentence(words)
                 logger.info(f"[{room_id}] 📝 문장 생성됨: {sentence}")
                 for peer in ws.app.state.rooms.get(room_id, []):
                     try:
@@ -183,6 +183,17 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
     user_words[ws] = []
     last_prediction_time[ws] = datetime.utcnow()
     logger.info(f"👤 [{label}] Room:[{room_id}]에 접속했습니다. (현재 인원: {len(rooms[room_id])})")
+
+    room_call_start_time[room_id] = datetime.utcnow().isoformat()
+    for peer in rooms[room_id]:
+        for target in rooms[room_id]:
+            await send_queues[target].put({
+                "type": "startCall",
+                "client_id": "peer" if target != peer else "self",
+                "nickname": user_nicknames.get(peer, "알 수 없음"),
+                "user_type": user_types.get(peer, "일반인"),
+                "started_at": room_call_start_time[room_id]
+            })
 
     asyncio.create_task(monitor_prediction_timeout(ws, room_id))
 
