@@ -13,6 +13,9 @@ from core.db.database import SessionLocal
 from core.auth.models import User
 from core.auth.dependencies import SECRET_KEY, ALGORITHM
 
+from collections import defaultdict
+from asyncio import Queue
+
 router = APIRouter()
 
 MAX_ROOM_CAPACITY = 4
@@ -25,6 +28,24 @@ room_call_start_time: dict[str, str] = {}
 prev_predictions: dict[WebSocket, str] = {}
 user_words: dict[WebSocket, list] = {}
 last_prediction_time: dict[WebSocket, datetime] = {}
+send_queues: dict[WebSocket, Queue] = defaultdict(Queue)
+
+async def sender_loop(ws: WebSocket, room_id: str):
+    queue = send_queues[ws]
+    try:
+        while True:
+            message = await queue.get()
+            
+            if message is None:
+                break
+            
+            try:
+                await ws.send_json(message)
+            except Exception as e:
+                logger.error(f"[{room_id}] 메시지 전송 실패 (큐): {e}")
+                break
+    finally:
+        send_queues.pop(ws, None)
 
 async def handle_landmark(ws: WebSocket, room_id: str, d: dict):
     rooms = ws.app.state.rooms
@@ -45,7 +66,7 @@ async def handle_landmark(ws: WebSocket, room_id: str, d: dict):
 
         for peer in list(rooms[room_id]):
             try:
-                await peer.send_json({
+                await send_queues[peer].put({
                     "type": "text",
                     "client_id": "peer" if peer != ws else "self",
                     "result": prediction
@@ -68,7 +89,7 @@ async def monitor_prediction_timeout(ws: WebSocket, room_id: str):
                 logger.info(f"[{room_id}] 📝 문장 생성됨: {sentence}")
                 for peer in ws.app.state.rooms.get(room_id, []):
                     try:
-                        await peer.send_json({
+                        await send_queues[peer].put({
                             "type": "sentence",
                             "client_id": "peer" if peer != ws else "self",
                             "result": sentence
@@ -77,7 +98,6 @@ async def monitor_prediction_timeout(ws: WebSocket, room_id: str):
                         logger.error(f"[{room_id}] 문장 전송 실패: {e}")
                 user_words[ws] = []
                 last_prediction_time[ws] = datetime.utcnow()
-
 
 def get_user_info_from_token(token: str) -> str:
     try:
@@ -100,24 +120,29 @@ def get_user_info_from_token(token: str) -> str:
     except PyJWTError:
         raise ValueError("유효하지 않은 토큰입니다 (JWT 에러)")
 
-
 def remove_client(ws: WebSocket, room_id: str):
     rooms = ws.app.state.rooms
     if ws in rooms.get(room_id, []):
         rooms[room_id].remove(ws)
+        
+    try:
+        send_queues[ws].put_nowait(None)
+    except:
+        pass
+    
     client_labels.pop(ws, None)
     user_nicknames.pop(ws, None)
     user_words.pop(ws, None)
     last_prediction_time.pop(ws, None)
     prev_predictions.pop(ws, None)
-
+    send_queues.pop(ws, None)
 
 async def notify_peer_leave(ws: WebSocket, room_id: str):
     rooms = ws.app.state.rooms
     for peer in list(rooms.get(room_id, [])):
         if peer != ws:
             try:
-                await peer.send_json({"type": "leave", "client_id": "peer"})
+                await send_queues[peer].put({"type": "leave", "client_id": "peer"})
             except Exception as e:
                 logger.error(f"[{room_id}] leave 알림 전송 실패: {e}")
                 remove_client(peer, room_id)
@@ -147,6 +172,9 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
         return
 
     await ws.accept()
+    send_queues[ws] = Queue()
+    asyncio.create_task(sender_loop(ws, room_id))
+    
     rooms[room_id].append(ws)
     label = "self" if len(rooms[room_id]) == 1 else "peer"
     client_labels[ws] = label
@@ -174,7 +202,7 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
                 for peer in list(rooms[room_id]):
                     if peer != ws:
                         try:
-                            await peer.send_text(payload)
+                            await send_queues[peer].put({"type": t, "data": d})
                         except Exception as e:
                             logger.error(f"[{room_id}] WebRTC 전송 실패: {e}")
                             pending.setdefault(room_id, []).append((peer, payload))
@@ -183,7 +211,7 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
             elif t in ["camera_state", "mic_state"]:
                 for peer in rooms[room_id]:
                     try:
-                        await peer.send_json({
+                        await send_queues[peer].put({
                             "type": t,
                             "client_id": "peer" if peer != ws else "self",
                             "data": d
@@ -195,7 +223,7 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
                 room_call_start_time[room_id] = datetime.utcnow().isoformat()
                 for peer in rooms[room_id]:
                     try:
-                        await peer.send_json({
+                        await send_queues[peer].put({
                             "type": "startCall",
                             "client_id": "peer" if peer != ws else "self",
                             "nickname": user_nicknames.get(ws, "알 수 없음"),
@@ -209,7 +237,7 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
                 logger.warning(f"[{room_id}] 지원되지 않는 메시지 타입: {t}")
 
     except WebSocketDisconnect:
-        logger.info(f"👋 [{client_labels.get(ws)}] Room:[{room_id}]에서 나갔습니다.")
+        logger.info(f"[{client_labels.get(ws)}] Room:[{room_id}]에서 나갔습니다.")
         await notify_peer_leave(ws, room_id)
         remove_client(ws, room_id)
 
