@@ -26,6 +26,34 @@ prev_predictions: dict[WebSocket, str] = {}
 user_words: dict[WebSocket, list] = {}
 last_prediction_time: dict[WebSocket, datetime] = {}
 
+async def handle_landmark(ws: WebSocket, room_id: str, d: dict):
+    rooms = ws.app.state.rooms
+    try:
+        prediction = ksl_to_korean(d)
+    except Exception as e:
+        logger.exception(f"[{room_id}] 예측 중 예외 발생: {e}")
+        prediction = ""
+
+    if not prediction:
+        return
+
+    prev = prev_predictions.get(ws, "")
+    if prediction != prev:
+        prev_predictions[ws] = prediction
+        user_words[ws].append(prediction)
+        last_prediction_time[ws] = datetime.utcnow()
+
+        for peer in list(rooms[room_id]):
+            try:
+                await peer.send_json({
+                    "type": "text",
+                    "client_id": "peer" if peer != ws else "self",
+                    "result": prediction
+                })
+            except Exception as e:
+                logger.error(f"[{room_id}] 예측 전송 실패: {e}")
+                remove_client(peer, room_id)
+
 async def monitor_prediction_timeout(ws: WebSocket, room_id: str):
     while True:
         await asyncio.sleep(1)
@@ -138,28 +166,7 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
             d = parsed.get("data")
 
             if t == "land_mark":
-                try:
-                    prediction = ksl_to_korean(d)
-                except Exception as e:
-                    logger.exception(f"[{room_id}] 예측 중 예외 발생: {e}")
-                    prediction = ""
-
-                prev = prev_predictions.get(ws, "")
-                if prediction != "" and prediction != prev:
-                    prev_predictions[ws] = prediction
-                    user_words[ws].append(prediction)
-                    last_prediction_time[ws] = datetime.utcnow()
-
-                    for peer in list(rooms[room_id]):
-                        try:
-                            await peer.send_json({
-                                "type": "text",
-                                "client_id": "peer" if peer != ws else "self",
-                                "result": prediction
-                            })
-                        except Exception as e:
-                            logger.error(f"[{room_id}] 예측 전송 실패: {e}")
-                            remove_client(peer, room_id)
+                asyncio.create_task(handle_landmark(ws, room_id, d))
 
             elif t in ["offer", "answer", "candidate"]:
                 logger.info(f"Room:[{room_id}] - {client_labels[ws]} → WebRTC 메시지: {t}")
