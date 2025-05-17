@@ -14,6 +14,8 @@ class RegisterRequest(BaseModel):
     user_type: Literal["농인", "일반인", "응급기관"] = Field(example="농인")
     emergency_type: Optional[Literal["병원", "경찰서", "소방서"]] = Field(None, example="병원")
     address: Optional[str] = Field(None, example="충청남도 천안시 동남구 충절로 1600")
+    latitude: Optional[float] = Field(None, example=36.7654321)
+    longitude: Optional[float] = Field(None, example=127.1234567)
     organization_name: Optional[str] = Field(None, example="한기대병원")
     
 
@@ -38,6 +40,9 @@ class CurrentUserResponse(BaseModel):
     emergency_type: Optional[str] = Field(None, example="병원")
     address: Optional[str] = Field(None, example="충남 천안시 동남구 병천면 충절로 1600")
     organization_name: Optional[str] = Field(None, example="한기대병원")
+    latitude: Optional[float] = Field(None, example=36.7654321)
+    longitude: Optional[float] = Field(None, example=127.1234567)
+    emergency_code: Optional[str] = Field(None, example="abc1234")
 
 class LoginRequest(BaseModel):
     username: str = Field(example="woo1234")

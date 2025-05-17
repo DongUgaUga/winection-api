@@ -15,3 +15,7 @@ class CreateRoomResponse(BaseModel):
 class WebSocketMessage(BaseModel):
     type: str
     data: Union[str, dict]
+    
+class LocationRequest(BaseModel):
+    latitude: float = Field(..., example=36.123456)
+    longitude: float = Field(..., example=127.456789)

@@ -59,6 +59,8 @@ def register_user(request: RegisterRequest, db: Session = Depends(get_db)):
         emergency_type=request.emergency_type,
         address=request.address,
         organization_name=request.organization_name,
+        latitude=request.latitude,
+        longitude=request.longitude,
         emergency_code=generate_emergency_code() if request.user_type == "응급기관" else None
     )
 

@@ -26,6 +26,10 @@ def validate_register(request: RegisterRequest, db: Session):
             missing_fields.append("address")
         if not request.organization_name:
             missing_fields.append("organization_name")
+        if request.latitude is None:
+            missing_fields.append("latitude")
+        if request.longitude is None:
+            missing_fields.append("longitude")
 
     if missing_fields:
         raise ValueError(f"다음 필드가 누락되었습니다: {', '.join(missing_fields)}")
