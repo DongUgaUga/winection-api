@@ -69,7 +69,7 @@ async def handle_landmark(ws: WebSocket, room_id: str, d: dict):
                 await send_queues[peer].put({
                     "type": "text",
                     "client_id": "peer" if peer != ws else "self",
-                    "result": prediction
+                    "result": ", ".join(user_words[ws])
                 })
             except Exception as e:
                 logger.error(f"[{room_id}] 예측 전송 실패: {e}")
