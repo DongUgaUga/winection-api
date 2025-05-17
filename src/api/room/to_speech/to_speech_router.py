@@ -1,7 +1,7 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
 import json
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from core.log.logging import logger
 from src.api.room.to_speech.services.sign_to_text import ksl_to_korean
@@ -186,7 +186,9 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
     last_prediction_time[ws] = datetime.utcnow()
     logger.info(f"👤 [{label}] Room:[{room_id}]에 접속했습니다. (현재 인원: {len(rooms[room_id])})")
 
-    room_call_start_time[room_id] = datetime.utcnow().isoformat()
+    KST = timezone(timedelta(hours=9))
+    room_call_start_time[room_id] = datetime.now(KST).isoformat(timespec="seconds")
+
     for target in rooms[room_id]:
         for peer in rooms[room_id]:
             await send_queues[target].put({
