@@ -22,7 +22,7 @@ def haversine(lat1, lon1, lat2, lon2):
 @router.post(
     "/location",
     summary="농인의 현재 위치 등록 및 근처 응급기관 선택",
-    description="농인의 현재 위치(위도, 경도)를 전송받아 가장 가까운 응급기관의 코드(emergency_code)를 반환합니다.",
+    description="농인의 현재 위치(위도, 경도)를 전송받아 가장 가까운 응급기관의 코드를 반환합니다.",
     response_model=MessageResponse,
     responses={
         200: {
@@ -42,10 +42,18 @@ def haversine(lat1, lon1, lat2, lon2):
             }
         },
         404: {
-            "description": "응급기관이 없거나 위치 정보가 누락된 경우",
+            "description": "DB 내 해당 유형의 응급기관이 없거나 위치 정보가 누락된 경우",
             "content": {
                 "application/json": {
-                    "example": {"detail": "등록된 응급기관이 없습니다."}
+                    "example": {"detail": "병원 유형의 응급기관이 없습니다."}
+                }
+            }
+        },
+        500: {
+            "description": "DB 내 응급기관 방코드 누락",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "응급기관에 emergency_code가 설정되지 않았습니다."}
                 }
             }
         }
