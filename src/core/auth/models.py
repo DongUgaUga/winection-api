@@ -16,3 +16,4 @@ class User(Base):
     address = mapped_column(String(255), nullable=True)
     organization_name = mapped_column(String(100), nullable=True)
     is_active = mapped_column(Boolean, default=True)
+    emergency_code = mapped_column(String(7), unique=True, nullable=True)

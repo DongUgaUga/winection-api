@@ -175,9 +175,11 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
     send_queues[ws] = Queue()
     asyncio.create_task(sender_loop(ws, room_id))
     
-    rooms[room_id].append(ws)
-    label = "self" if len(rooms[room_id]) == 1 else "peer"
+    label = "self" if len(rooms[room_id]) == 0 else "peer"
     client_labels[ws] = label
+    
+    rooms[room_id].append(ws)
+    
     user_nicknames[ws] = nickname
     user_types[ws] = user_type
     user_words[ws] = []
@@ -185,8 +187,8 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
     logger.info(f"👤 [{label}] Room:[{room_id}]에 접속했습니다. (현재 인원: {len(rooms[room_id])})")
 
     room_call_start_time[room_id] = datetime.utcnow().isoformat()
-    for peer in rooms[room_id]:
-        for target in rooms[room_id]:
+    for target in rooms[room_id]:
+        for peer in rooms[room_id]:
             await send_queues[target].put({
                 "type": "startCall",
                 "client_id": "peer" if target != peer else "self",

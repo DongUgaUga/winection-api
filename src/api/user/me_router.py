@@ -38,7 +38,8 @@ router = APIRouter(
                                 "user_type": "응급기관",
                                 "emergency_type": "병원",
                                 "address": "충남 천안시 동남구 병천면 충절로 1600",
-                                "organization_name": "한기대병원"
+                                "organization_name": "한기대병원",
+                                "emergency_code": "a1b2c3d"
                             }
                         }
                     }
@@ -70,7 +71,8 @@ def read_current_user(current_user: User = Depends(get_current_user)):
         user_data.update({
             "emergency_type": current_user.emergency_type,
             "address": current_user.address,
-            "organization_name": current_user.organization_name
+            "organization_name": current_user.organization_name,
+            "emergency_code": current_user.emergency_code
         })
 
     return user_data

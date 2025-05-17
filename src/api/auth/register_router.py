@@ -7,9 +7,15 @@ from core.schemas.user_schema import RegisterRequest, MessageResponse
 from core.validators.user_validators import validate_register, validate_nickname
 from core.auth.security import hash_password
 
+import random
+import string
+
 router = APIRouter(
     tags=["Register"]  # Swagger 그룹만 사용
 )
+
+def generate_emergency_code(length=7):
+    return ''.join(random.choices(string.ascii_lowercase + string.digits, k=length))
 
 @router.post(
     "/register",
@@ -52,7 +58,8 @@ def register_user(request: RegisterRequest, db: Session = Depends(get_db)):
         user_type=request.user_type,
         emergency_type=request.emergency_type,
         address=request.address,
-        organization_name=request.organization_name
+        organization_name=request.organization_name,
+        emergency_code=generate_emergency_code() if request.user_type == "응급기관" else None
     )
 
     db.add(new_user)
