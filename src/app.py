@@ -14,6 +14,7 @@ from api.room import room_router
 from api.room.to_speech import to_speech_router, translate_router
 from api.room.to_sign import to_sign_router
 from api.room.emergency import location_router
+from collections import deque
 
 app = FastAPI(
     title="Winection API",
@@ -25,6 +26,11 @@ add_cors_middleware(app)
 
 app.state.rooms = {}
 app.state.pending_signals = {}
+
+app.state.emergency_queues = {}       # 코드별 대기열
+app.state.emergency_waiting = {}      # 코드별 응급기관 WebSocket
+app.state.emergency_locations = {}    # 농인 위치
+app.state.users = {}                  # 농인 전체 정보
 
 app.openapi = lambda: custom_openapi(app)
 
