@@ -14,7 +14,8 @@ from api.room import room_router
 from api.room.to_speech import to_speech_router, translate_router
 from api.room.to_sign import to_sign_router
 from api.room.emergency import location_router
-from collections import deque
+from api.room.emergency import waitqueue_router
+from api.room.emergency import emergency_router
 
 app = FastAPI(
     title="Winection API",
@@ -46,4 +47,6 @@ app.include_router(translate_router.router)
 app.include_router(to_speech_router.router)
 app.include_router(to_sign_router.router)
 
+app.include_router(waitqueue_router.router)
+app.include_router(emergency_router.router)
 app.include_router(location_router.router)

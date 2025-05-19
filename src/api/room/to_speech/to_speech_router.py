@@ -6,12 +6,7 @@ from datetime import datetime, timedelta, timezone
 from core.log.logging import logger
 from src.api.room.to_speech.services.sign_to_text import ksl_to_korean
 from src.api.room.to_speech.services.text_to_sentence import words_to_sentence, stop_words_to_sentence
-
-import jwt
-from jwt import PyJWTError
-from core.db.database import SessionLocal
-from core.auth.models import User
-from core.auth.dependencies import SECRET_KEY, ALGORITHM
+from core.auth.dependencies import get_user_info_from_token
 
 from collections import defaultdict
 from asyncio import Queue
@@ -98,27 +93,6 @@ async def monitor_prediction_timeout(ws: WebSocket, room_id: str):
                         logger.error(f"[{room_id}] 문장 전송 실패: {e}")
                 user_words[ws] = []
                 last_prediction_time[ws] = datetime.utcnow()
-
-def get_user_info_from_token(token: str) -> str:
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username = payload.get("sub")
-        if not username:
-            raise ValueError("유효하지 않은 토큰입니다 (sub 없음)")
-
-        db = SessionLocal()
-        user = db.query(User).filter(User.username == username).first()
-        db.close()
-
-        if user is None:
-            raise ValueError("해당 유저를 찾을 수 없습니다")
-
-        return {
-            "nickname": user.nickname,
-            "user_type": user.user_type
-        } 
-    except PyJWTError:
-        raise ValueError("유효하지 않은 토큰입니다 (JWT 에러)")
 
 def remove_client(ws: WebSocket, room_id: str):
     rooms = ws.app.state.rooms
