@@ -109,5 +109,28 @@ async def emergency_ws(
                     }
                 })
 
+            elif msg_type == "readyCall":
+                app.state.emergency_waiting[emergency_code] = ws
+
+                queue = app.state.emergency_queues.get(emergency_code, deque())
+                for uid, deaf_ws in queue:
+                    target_user = app.state.users.get(uid)
+                    lat, lng = app.state.emergency_locations.get(uid, (None, None))
+
+                    if target_user:
+                        await ws.send_json({
+                            "type": "requestCall",
+                            "client_id": "peer",
+                            "data": {
+                                "user_id": uid,
+                                "nickname": target_user.nickname,
+                                "phone_number": target_user.phone_number,
+                                "location": {
+                                    "latitude": lat,
+                                    "longitude": lng
+                                }
+                            }
+                        })
+
     except WebSocketDisconnect:
         app.state.emergency_waiting.pop(emergency_code, None)
