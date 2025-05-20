@@ -20,6 +20,15 @@ async def emergency_ws(
 
     await ws.accept()
     app = ws.app
+    if not hasattr(app.state, "emergency_waiting"):
+        app.state.emergency_waiting = {}
+    if not hasattr(app.state, "emergency_queues"):
+        app.state.emergency_queues = {}
+    if not hasattr(app.state, "users"):
+        app.state.users = {}
+    if not hasattr(app.state, "emergency_locations"):
+        app.state.emergency_locations = {}
+
     app.state.emergency_waiting[emergency_code] = ws
 
     queue = app.state.emergency_queues.get(emergency_code, deque())
@@ -53,12 +62,14 @@ async def emergency_ws(
                 queue = app.state.emergency_queues.get(emergency_code, deque())
                 target_ws = None
 
+                # 최신 큐 상태를 반영하여, 농인이 이미 빠진 경우를 처리
                 for i, (uid, client_ws) in enumerate(queue):
                     if uid == target_user_id:
                         target_ws = client_ws
                         del queue[i]
                         break
 
+                # 만약 대기열에서 사라졌다면 cancelCall 전송
                 if not target_ws or target_user_id not in app.state.users:
                     await ws.send_json({
                         "type": "cancelCall",

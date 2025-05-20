@@ -21,6 +21,15 @@ async def deaf_waitqueue_ws(
     app = ws.app
     user_id = user.id
 
+    if not hasattr(app.state, "emergency_waiting"):
+        app.state.emergency_waiting = {}
+    if not hasattr(app.state, "emergency_queues"):
+        app.state.emergency_queues = {}
+    if not hasattr(app.state, "users"):
+        app.state.users = {}
+    if not hasattr(app.state, "emergency_locations"):
+        app.state.emergency_locations = {}
+
     app.state.users[user_id] = user
     lat, lng = app.state.emergency_locations.get(user_id, (None, None))
 
@@ -44,20 +53,29 @@ async def deaf_waitqueue_ws(
             }
         })
 
+    async def notify_cancellation():
+        agency_ws = app.state.emergency_waiting.get(emergency_code)
+        if agency_ws:
+            await agency_ws.send_json({
+                "type": "cancelCall",
+                "data": {
+                    "user_id": user_id
+                }
+            })
+
     try:
         while True:
             msg = await ws.receive_json()
             msg_type = msg.get("type")
 
             if msg_type == "quitCall":
-
                 app.state.emergency_queues[emergency_code] = deque([
                     (uid, w) for uid, w in app.state.emergency_queues[emergency_code]
                     if uid != user_id
                 ])
                 app.state.users.pop(user_id, None)
                 app.state.emergency_locations.pop(user_id, None)
-
+                await notify_cancellation()
                 await ws.close(code=1000, reason="사용자 요청 종료")
                 break
 
@@ -68,3 +86,4 @@ async def deaf_waitqueue_ws(
         ])
         app.state.users.pop(user_id, None)
         app.state.emergency_locations.pop(user_id, None)
+        await notify_cancellation()
