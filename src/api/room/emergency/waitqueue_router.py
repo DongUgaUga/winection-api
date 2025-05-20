@@ -46,10 +46,25 @@ async def deaf_waitqueue_ws(
 
     try:
         while True:
-            await ws.receive_text()
+            msg = await ws.receive_json()
+            msg_type = msg.get("type")
+
+            if msg_type == "quitCall":
+
+                app.state.emergency_queues[emergency_code] = deque([
+                    (uid, w) for uid, w in app.state.emergency_queues[emergency_code]
+                    if uid != user_id
+                ])
+                app.state.users.pop(user_id, None)
+                app.state.emergency_locations.pop(user_id, None)
+
+                await ws.close(code=1000, reason="사용자 요청 종료")
+                break
+
     except WebSocketDisconnect:
         app.state.emergency_queues[emergency_code] = deque([
-            (uid, w) for uid, w in app.state.emergency_queues[emergency_code] if uid != user_id
+            (uid, w) for uid, w in app.state.emergency_queues[emergency_code]
+            if uid != user_id
         ])
         app.state.users.pop(user_id, None)
         app.state.emergency_locations.pop(user_id, None)

@@ -1,13 +1,4 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
-from core.auth.models import User
-from collections import deque
-from datetime import datetime
-from datetime import datetime, timezone, timedelta
-from core.auth.dependencies import get_user_info_from_token
-
-router = APIRouter()
-
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
 from core.auth.dependencies import get_user_info_from_token
 from collections import deque
 from datetime import datetime, timezone, timedelta
@@ -32,7 +23,6 @@ async def emergency_ws(
     app.state.emergency_waiting[emergency_code] = ws
 
     queue = app.state.emergency_queues.get(emergency_code, deque())
-
     for uid, deaf_ws in queue:
         target_user = app.state.users.get(uid)
         lat, lng = app.state.emergency_locations.get(uid, (None, None))
@@ -69,10 +59,12 @@ async def emergency_ws(
                         del queue[i]
                         break
 
-                if not target_ws:
+                if not target_ws or target_user_id not in app.state.users:
                     await ws.send_json({
-                        "type": "error",
-                        "message": "해당 농인이 대기열에 없습니다."
+                        "type": "cancelCall",
+                        "data": {
+                            "user_id": target_user_id
+                        }
                     })
                     continue
 
