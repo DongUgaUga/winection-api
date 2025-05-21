@@ -134,3 +134,4 @@ async def emergency_ws(
 
     except WebSocketDisconnect:
         app.state.emergency_waiting.pop(emergency_code, None)
+        app.state.emergency_queues.pop(emergency_code, None)
