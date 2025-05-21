@@ -103,6 +103,7 @@ async def emergency_ws(
                     "data": {
                         "organization_name": user.organization_name,
                         "address": user.address,
+                        "phone_number": user.phone_number,
                         "latitude": user.latitude,
                         "longitude": user.longitude,
                         "start_time": now
