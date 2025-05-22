@@ -8,14 +8,13 @@ sys.path.append(SRC_DIR)
 from fastapi import FastAPI
 from core.config.cors_config import add_cors_middleware
 from core.config.swagger_config import custom_openapi
-from api.auth import login_router, register_router, password_router
-from api.user import me_router
-from api.room import room_router
-from api.room.to_speech import to_speech_router, translate_router
-from api.room.to_sign import to_sign_router
-from api.room.emergency import location_router
-from api.room.emergency import waitqueue_router
-from api.room.emergency import emergency_router
+from api.auth.router import login_router, register_router, password_router
+from api.user.router import me_router
+from api.room.room_id.router import room_router
+from api.room.video.router import video_router
+from api.room.emergency.router import location_router
+from api.room.emergency.router import waitqueue_router
+from api.room.emergency.router import emergency_router
 
 app = FastAPI(
     title="Winection API",
@@ -43,9 +42,7 @@ app.include_router(me_router.router)
 app.include_router(password_router.router)
 
 app.include_router(room_router.router)
-app.include_router(translate_router.router)
-app.include_router(to_speech_router.router)
-app.include_router(to_sign_router.router)
+app.include_router(video_router.router)
 
 app.include_router(waitqueue_router.router)
 app.include_router(emergency_router.router)

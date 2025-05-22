@@ -1,14 +1,10 @@
-import random
-import string
 from fastapi import APIRouter, Request
 from core.schemas.room_schema import CreateRoomResponse
+from api.room.room_id.service.generate_room_code import generate_room_code
 
 router = APIRouter(
-    tags=["Room"]
+    tags=["Room id"]
 )
-
-def generate_room_code(length=6):
-    return ''.join(random.choices(string.ascii_lowercase + string.digits, k=length))
 
 @router.post(
     "/rooms",

@@ -1,4 +1,4 @@
-from sqlalchemy import String, Integer, Boolean, Float
+from sqlalchemy import String, Integer, Boolean, Float, Column, Integer, String
 from sqlalchemy.orm import mapped_column, declarative_base
 
 Base = declarative_base()
@@ -19,3 +19,9 @@ class User(Base):
     longitude = mapped_column(Float, nullable=True)
     is_active = mapped_column(Boolean, default=True)
     emergency_code = mapped_column(String(7), unique=True, nullable=True)
+    
+class SignWord(Base):
+    __tablename__ = "sign_word"
+
+    index = Column(Integer, primary_key=True)
+    word = Column(String(50), unique=True, nullable=False)
