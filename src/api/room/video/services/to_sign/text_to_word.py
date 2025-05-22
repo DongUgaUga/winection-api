@@ -27,7 +27,6 @@ def text_to_word(sentence: str, word_list: list[str]) -> list[str]:
         f"- 입력3: 손목이 부러졌어요.\n"
         f"- 출력3: 손목 부러지다\n"
     )
-    print(f"단어 목록: [{', '.join(word_list)}]\n")
     user_prompt = (
         f"\n"
         f"문장: {sentence}\n\n"

@@ -19,7 +19,7 @@ class RoomManager:
         if room_id not in self.rooms:
             self.rooms[room_id] = []
         self.rooms[room_id].append(ws)
-        self.send_queues[ws] = Queue()
+
         self.user_words[ws] = []
         self.client_labels[ws] = "self" if len(self.rooms[room_id]) == 1 else "peer"
         self.user_nicknames[ws] = nickname
@@ -31,9 +31,16 @@ class RoomManager:
     def leave(self, room_id: str, ws: WebSocket):
         if ws in self.rooms.get(room_id, []):
             self.rooms[room_id].remove(ws)
+
+        try:
+            self.send_queues[ws].put_nowait(None)
+        except:
+            pass
+
         for store in [
-            self.send_queues, self.user_words, self.client_labels, self.user_nicknames,
-            self.user_types, self.last_prediction_time, self.prev_predictions
+            self.send_queues, self.user_words, self.client_labels,
+            self.user_nicknames, self.user_types,
+            self.last_prediction_time, self.prev_predictions
         ]:
             store.pop(ws, None)
 

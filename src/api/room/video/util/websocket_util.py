@@ -3,8 +3,7 @@ from asyncio import Queue
 from fastapi import WebSocket
 from core.log.logging import logger
 
-async def sender_loop(ws: WebSocket, room_id: str, send_queues: dict[WebSocket, Queue]):
-    queue = send_queues[ws]
+async def sender_loop(ws: WebSocket, room_id: str, queue: Queue):
     try:
         while True:
             message = await queue.get()
@@ -16,7 +15,7 @@ async def sender_loop(ws: WebSocket, room_id: str, send_queues: dict[WebSocket, 
                 logger.error(f"[{room_id}] 메시지 전송 실패 (큐): {e}")
                 break
     finally:
-        send_queues.pop(ws, None)
+        pass
 
 def remove_client(ws, room_id, rooms, client_labels, user_nicknames, user_types, user_words, last_prediction_time, prev_predictions, send_queues):
     if ws in rooms.get(room_id, []):
