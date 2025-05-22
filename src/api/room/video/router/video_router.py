@@ -19,7 +19,7 @@ room_manager = RoomManager()
 MAX_ROOM_CAPACITY = 4
 room_call_start_time: dict[str, str] = {}
 
-@router.websocket("/ws/slts/{room_id}")
+@router.websocket("/ws/video/{room_id}")
 async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...)):
     try:
         user_info = get_user_info_from_token(token)
@@ -50,7 +50,7 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
                 "type": "startCall",
                 "client_id": "peer" if target != peer else "self",
                 "nickname": room_manager.user_nicknames.get(peer, "알 수 없음"),
-                "user_type": room_manager.user_types.get(peer, "일반인"),
+                "user_type": room_manager.user_types.get(peer, "청인"),
                 "started_at": room_call_start_time[room_id]
             })
 
@@ -80,7 +80,7 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
                     room_manager.last_prediction_time
                 ))
 
-            elif t == "text" and room_manager.user_types[ws] in ["일반인", "응급기관"]:
+            elif t == "text" and room_manager.user_types[ws] in ["청인", "응급기관"]:
                 input_text = str(d.get("text", ""))
                 logger.info(f"[{room_id}] STT 텍스트 수신: {input_text}")
 
@@ -145,7 +145,7 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
                             "type": "startCall",
                             "client_id": "peer" if peer != ws else "self",
                             "nickname": room_manager.user_nicknames.get(ws, "알 수 없음"),
-                            "user_type": room_manager.user_types.get(ws, "일반인"),
+                            "user_type": room_manager.user_types.get(ws, "청인"),
                             "started_at": room_call_start_time[room_id]
                         })
                     except Exception as e:

@@ -11,7 +11,7 @@ class RegisterRequest(BaseModel):
         description="형식: 01012345678 또는 010-1234-5678",
         example="010-1234-5678"
     )
-    user_type: Literal["농인", "일반인", "응급기관"] = Field(example="응급기관")
+    user_type: Literal["농인", "청인", "응급기관"] = Field(example="응급기관")
     emergency_type: Optional[Literal["병원", "경찰서", "소방서"]] = Field(None, example="병원")
     address: Optional[str] = Field(None, example="충청남도 천안시 동남구 충절로 1600")
     latitude: Optional[float] = Field(None, example=36.7654321)

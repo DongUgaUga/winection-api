@@ -25,7 +25,7 @@ router = APIRouter(
                                 "username": "woo1234",
                                 "nickname": "이동우",
                                 "phone_number": "010-1111-2222",
-                                "user_type": "일반인"
+                                "user_type": "청인"
                             }
                         },
                         "응급기관 사용자": {
