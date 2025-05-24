@@ -13,7 +13,7 @@ async def monitor_prediction_timeout(ws, room_id, user_words, last_prediction_ti
         if elapsed.total_seconds() >= 3:
             words = user_words.get(ws, [])
             if words:
-                sentence = stop_words_to_sentence(words)
+                sentence = words_to_sentence(words)
                 logger.info(f"[{room_id}] 📝 문장 생성됨: {sentence}")
                 for peer in rooms.get(room_id, []):
                     try:
