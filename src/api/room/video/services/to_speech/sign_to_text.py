@@ -3,24 +3,27 @@ from collections import deque, Counter
 from tensorflow.keras.models import load_model
 from core.log.logging import logger
 
+# 모델 및 라벨 로드
 model = load_model("src/resources/sign_model.h5")
 class_names = np.load("src/resources/class_names.npy", allow_pickle=True)
 
+# 설정값
 WINDOW_SIZE = 30
 CONFIDENCE_THRESHOLD = 0.7
 PREDICTION_HISTORY_SIZE = 10
 MIN_CONFIRM_COUNT = 7
-MOVEMENT_THRESHOLD = 1e-4  # 변화량 기준
 
+HAND_ABSENCE_THRESHOLD = 1e-4
+HAND_ABSENCE_FRAME_COUNT = 30  # 1초간 손이 안 보이면 종료
+
+# 상태 저장용 전역 변수
 prediction_history = deque(maxlen=PREDICTION_HISTORY_SIZE)
 last_landmark = None
-
-def calculate_variance(frame, prev_frame):
-    diff = frame - prev_frame
-    return np.mean(np.square(diff))
+hand_absent_counter = 0
 
 def ksl_to_korean(sequence: dict) -> str:
-    global last_landmark
+    global last_landmark, hand_absent_counter
+
     pose = sequence.get('pose', [])
     if len(pose) < WINDOW_SIZE:
         logger.warning(f"[입력 부족] 프레임 수 부족: {len(pose)}프레임")
@@ -37,7 +40,6 @@ def ksl_to_korean(sequence: dict) -> str:
         frames.append(coords)
 
     frames = np.array(frames, dtype=np.float32)
-
     word_output = ""
 
     for i in range(len(frames) - WINDOW_SIZE + 1):
@@ -56,21 +58,29 @@ def ksl_to_korean(sequence: dict) -> str:
             logger.debug(f"[무시] 낮은 신뢰도 {confidence:.3f} → 예측 보류")
 
         current_landmark = window[-1]
-        if last_landmark is not None:
-            variance = calculate_variance(current_landmark, last_landmark)
-            logger.debug(f"[변화량] {variance:.8f}")
 
-            if variance < MOVEMENT_THRESHOLD:
-                counter = Counter(prediction_history)
-                if counter:
-                    best_label, count = counter.most_common(1)[0]
-                    logger.info(f"[다수결 후보] '{best_label}' 등장 {count}회")
-                    if count >= MIN_CONFIRM_COUNT:
-                        logger.info(f"✅ 단어 확정: '{best_label}'")
-                        word_output = best_label
-                    else:
-                        logger.info("❌ 확정 실패: 등장 횟수 부족")
-                prediction_history.clear()
+        left_hand = current_landmark[33*3 : 54*3]
+        right_hand = current_landmark[54*3 : 75*3]
+
+        left_mean = np.mean(np.abs(left_hand))
+        right_mean = np.mean(np.abs(right_hand))
+
+        if left_mean < HAND_ABSENCE_THRESHOLD and right_mean < HAND_ABSENCE_THRESHOLD:
+            hand_absent_counter += 1
+            logger.debug(f"[손 사라짐] frame {i} → {hand_absent_counter}/{HAND_ABSENCE_FRAME_COUNT}")
+        else:
+            hand_absent_counter = 0
+
+        if hand_absent_counter >= HAND_ABSENCE_FRAME_COUNT:
+            counter = Counter(prediction_history)
+            if counter:
+                best_label, count = counter.most_common(1)[0]
+                logger.info(f"[문장 종료 후보] '{best_label}' 등장 {count}회")
+                if count >= MIN_CONFIRM_COUNT:
+                    logger.info(f"✅ 단어 확정 (손 사라짐 기준): '{best_label}'")
+                    word_output = best_label
+            prediction_history.clear()
+            hand_absent_counter = 0
 
         last_landmark = current_landmark
 
