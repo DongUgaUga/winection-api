@@ -11,8 +11,7 @@ async def deaf_waitqueue_ws(
     token: str = Query(...)
 ):
     try:
-        user_info = get_user_info_from_token(token)
-        user = user_info["user"]
+        user = get_user_info_from_token(token)
     except ValueError as e:
         await ws.close(code=1008, reason=str(e))
         return
