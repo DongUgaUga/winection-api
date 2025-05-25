@@ -1,16 +1,16 @@
 import os
+import jwt
+from jwt import PyJWTError
 from dotenv import load_dotenv
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 
-import jwt
-from jwt import PyJWTError
-
 from sqlalchemy.orm import Session
 from core.auth.models import User
-from core.db.database import get_db
-from core.db.database import SessionLocal
+from core.db.database import get_db, SessionLocal
+
+from contextlib import contextmanager
 
 load_dotenv()
 
@@ -45,20 +45,24 @@ def get_current_user(
         )
     return user
 
-def get_user_info_from_token(token: str) -> User:
+def get_user_info_from_token(token: str, db: Session) -> User:
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username = payload.get("sub")
-        if username is None:
+        if not username:
             raise ValueError("토큰에 username 없음")
-    except Exception:
+    except PyJWTError:
         raise ValueError("유효하지 않은 토큰")
 
+    user = db.query(User).filter(User.username == username).first()
+    if user is None:
+        raise ValueError("유저 없음")
+    return user
+
+@contextmanager
+def get_db_context():
     db = SessionLocal()
     try:
-        user = db.query(User).filter(User.username == username).first()
-        if user is None:
-            raise ValueError("유저 없음")
-        return user
+        yield db
     finally:
         db.close()

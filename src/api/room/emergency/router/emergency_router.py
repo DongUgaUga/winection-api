@@ -1,5 +1,5 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
-from core.auth.dependencies import get_user_info_from_token
+from core.auth.dependencies import get_user_info_from_token, get_db_context
 from collections import deque
 from datetime import datetime, timezone, timedelta
 
@@ -11,10 +11,15 @@ async def emergency_ws(
     emergency_code: str,
     token: str = Query(...)
 ):
+    from sqlalchemy.exc import SQLAlchemyError
     try:
-        user = get_user_info_from_token(token)
+        with get_db_context() as db:
+            user = get_user_info_from_token(token, db)
     except ValueError as e:
         await ws.close(code=1008, reason=str(e))
+        return
+    except SQLAlchemyError as e:
+        await ws.close(code=1011, reason="DB 오류 발생")
         return
 
     await ws.accept()

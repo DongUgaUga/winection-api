@@ -1,6 +1,8 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from core.auth.models import Base
+from contextlib import asynccontextmanager
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from dotenv import load_dotenv
 import os
@@ -14,7 +16,13 @@ db = os.getenv("DB_NAME")
 
 DB_URL = f'mysql+pymysql://{user}:{passwd}@{host}:{port}/{db}?charset=utf8'
 
-engine = create_engine(DB_URL, echo=False)
+engine = create_engine(
+    DB_URL,
+    echo=False,
+    pool_size=10,
+    max_overflow=20,
+    pool_timeout=30
+)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base.metadata.create_all(bind=engine)

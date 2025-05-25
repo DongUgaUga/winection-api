@@ -1,6 +1,8 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
-from core.auth.dependencies import get_user_info_from_token
+from core.auth.dependencies import get_user_info_from_token, get_db_context
 from collections import deque
+from sqlalchemy.exc import SQLAlchemyError
+from starlette.websockets import WebSocketState
 
 router = APIRouter()
 
@@ -11,12 +13,17 @@ async def deaf_waitqueue_ws(
     token: str = Query(...)
 ):
     try:
-        user = get_user_info_from_token(token)
+        with get_db_context() as db:
+            user = get_user_info_from_token(token, db)
     except ValueError as e:
         await ws.close(code=1008, reason=str(e))
         return
+    except SQLAlchemyError:
+        await ws.close(code=1011, reason="DB 연결 실패")
+        return
 
     await ws.accept()
+
     app = ws.app
     user_id = user.id
 
@@ -54,7 +61,7 @@ async def deaf_waitqueue_ws(
 
     async def notify_cancellation():
         agency_ws = app.state.emergency_waiting.get(emergency_code)
-        if agency_ws:
+        if agency_ws and agency_ws.application_state != WebSocketState.DISCONNECTED:
             await agency_ws.send_json({
                 "type": "cancelCall",
                 "data": {

@@ -12,6 +12,7 @@ from src.api.room.video.util.websocket_util import sender_loop, notify_peer_leav
 from src.api.room.video.util.room_manager import room_manager
 from core.auth.dependencies import get_user_info_from_token
 from core.db.database import get_db
+from core.auth.dependencies import get_db_context
 
 from src.api.room.video.services.to_speech.text_to_sentence import words_to_sentence
 from src.api.room.video.services.to_speech.sentence_to_speech import text_to_speech
@@ -24,9 +25,10 @@ room_call_start_time: dict[str, str] = {}
 @router.websocket("/ws/video/{room_id}")
 async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...)):
     try:
-        user = get_user_info_from_token(token)
-        nickname = user.nickname
-        user_type = user.user_type
+        with get_db_context() as db:
+            user = get_user_info_from_token(token, db)
+            nickname = user.nickname
+            user_type = user.user_type
     except ValueError as e:
         await ws.close(code=1008, reason=str(e))
         logger.warning(f"[{room_id}] WebSocket 인증 실패: {e}")
@@ -77,23 +79,24 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
                 input_text = str(d.get("text", ""))
                 logger.info(f"[{room_id}] STT 텍스트 수신: {input_text}")
 
-                try:
-                    db = next(get_db())
-                    word_list = get_all_sign_words(db)
-                    words = text_to_word(input_text, word_list)
-                except Exception as e:
-                    logger.error(f"[{room_id}] text_to_word 처리 실패: {e}")
-                    words = []
-
                 motions = []
                 results_for_log = []
-                for word in words:
-                    idx = get_index_by_word(word, db)
-                    if idx is not None:
-                        motions.append({"word": word, "index": idx})
-                        results_for_log.append(f"({word}, {idx})")
-                    else:
-                        logger.warning(f"[{room_id}] ⚠️ DB에 존재하지 않는 단어: '{word}'")
+
+                try:
+                    with get_db_context() as db:
+                        word_list = get_all_sign_words(db)
+                        words = text_to_word(input_text, word_list)
+
+                        for word in words:
+                            idx = get_index_by_word(word, db)
+                            if idx is not None:
+                                motions.append({"word": word, "index": idx})
+                                results_for_log.append(f"({word}, {idx})")
+                            else:
+                                logger.warning(f"[{room_id}] ⚠️ DB에 존재하지 않는 단어: '{word}'")
+                except Exception as e:
+                    logger.error(f"[{room_id}] text_to_word 또는 DB 처리 실패: {e}")
+                    words = []
 
                 if results_for_log:
                     logger.info(f"[{room_id}] 결과: {', '.join(results_for_log)}")
@@ -109,21 +112,21 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
                         })
                     except Exception as e:
                         logger.error(f"[{room_id}] 인덱스 전송 실패: {e}")
-            
-                if words:
-                        try:
-                            sentence = words_to_sentence(words)
-                            audio_base64 = text_to_speech("ko-KR-Wavenet-D", sentence)
 
-                            for peer in room_manager.get_peers(room_id):
-                                await room_manager.get_queue(peer).put({
-                                    "type": "sentence",
-                                    "client_id": "peer" if peer != ws else "self",
-                                    "sentence": sentence,
-                                    "audio_base64": audio_base64
-                                })
-                        except Exception as e:
-                            logger.error(f"[{room_id}] 문장/TTS 생성 실패: {e}")
+                if words:
+                    try:
+                        sentence = words_to_sentence(words)
+                        audio_base64 = text_to_speech("ko-KR-Wavenet-D", sentence)
+
+                        for peer in room_manager.get_peers(room_id):
+                            await room_manager.get_queue(peer).put({
+                                "type": "sentence",
+                                "client_id": "peer" if peer != ws else "self",
+                                "sentence": sentence,
+                                "audio_base64": audio_base64
+                            })
+                    except Exception as e:
+                        logger.error(f"[{room_id}] 문장/TTS 생성 실패: {e}")
 
             elif t in ["offer", "answer", "candidate"]:
                 payload = {"type": t, "data": d}
