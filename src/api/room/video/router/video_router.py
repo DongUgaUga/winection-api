@@ -25,6 +25,8 @@ room_call_start_time: dict[str, str] = {}
 async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...)):
     try:
         user = get_user_info_from_token(token)
+        nickname = user.nickname
+        user_type = user.user_type
     except ValueError as e:
         await ws.close(code=1008, reason=str(e))
         logger.warning(f"[{room_id}] WebSocket 인증 실패: {e}")
