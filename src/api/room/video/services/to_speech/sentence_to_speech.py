@@ -1,4 +1,3 @@
-# Google TTS 음성 변환
 import google.cloud.texttospeech as tts
 import base64
 import os

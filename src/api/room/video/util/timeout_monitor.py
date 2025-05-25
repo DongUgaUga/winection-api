@@ -1,28 +1,28 @@
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 from core.log.logging import logger
-from src.api.room.video.services.to_speech.text_to_sentence import words_to_sentence, stop_words_to_sentence
+from src.api.room.video.util.room_manager import room_manager
 
-async def monitor_prediction_timeout(ws, room_id, user_words, last_prediction_time, send_queues, rooms):
-    while True:
-        await asyncio.sleep(1)
-        if ws not in last_prediction_time:
-            continue
+TIMEOUT_SECONDS = 3
 
-        elapsed = datetime.utcnow() - last_prediction_time[ws]
-        if elapsed.total_seconds() >= 3:
-            words = user_words.get(ws, [])
-            if words:
-                sentence = words_to_sentence(words)
-                logger.info(f"[{room_id}] 📝 문장 생성됨: {sentence}")
-                for peer in rooms.get(room_id, []):
-                    try:
-                        await send_queues[peer].put({
-                            "type": "sentence",
-                            "client_id": "peer" if peer != ws else "self",
-                            "result": sentence
-                        })
-                    except Exception as e:
-                        logger.error(f"[{room_id}] 문장 전송 실패: {e}")
-                user_words[ws] = []
-                last_prediction_time[ws] = datetime.utcnow()
+async def monitor_prediction_timeout(ws, room_id):
+    try:
+        while True:
+            await asyncio.sleep(1)
+            last_time = room_manager.last_prediction_time.get(ws)
+            if last_time is None:
+                continue
+
+            now = datetime.utcnow()
+            if (now - last_time) > timedelta(seconds=TIMEOUT_SECONDS):
+                words = room_manager.user_words.get(ws, [])
+                if words:
+                    logger.info(f"[{room_id}] 🛑 예측 중단 감지 – 누적 단어: {words}")
+                    await room_manager.send_queues[ws].put({
+                        "type": "sentence",
+                        "client_id": "self",
+                        "words": words
+                    })
+                    room_manager.user_words[ws] = []
+    except Exception as e:
+        logger.error(f"[{room_id}] monitor_prediction_timeout 오류: {e}", exc_info=True)

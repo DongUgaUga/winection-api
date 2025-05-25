@@ -55,3 +55,5 @@ class RoomManager:
 
     def get_queue(self, ws: WebSocket) -> Queue:
         return self.send_queues[ws]
+    
+room_manager = RoomManager()

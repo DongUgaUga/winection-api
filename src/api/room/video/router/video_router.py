@@ -9,12 +9,14 @@ from src.api.room.video.services.to_sign.word_to_index import get_index_by_word,
 from src.api.room.video.util.landmark_util import handle_landmark
 from src.api.room.video.util.timeout_monitor import monitor_prediction_timeout
 from src.api.room.video.util.websocket_util import sender_loop, notify_peer_leave
-from src.api.room.video.util.room_manager import RoomManager
+from src.api.room.video.util.room_manager import room_manager
 from core.auth.dependencies import get_user_info_from_token
 from core.db.database import get_db
 
+from src.api.room.video.services.to_speech.text_to_sentence import words_to_sentence
+from src.api.room.video.services.to_speech.sentence_to_speech import text_to_speech
+
 router = APIRouter()
-room_manager = RoomManager()
 
 MAX_ROOM_CAPACITY = 4
 room_call_start_time: dict[str, str] = {}
@@ -55,13 +57,7 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
             })
 
     if user_type == "농인":
-        asyncio.create_task(monitor_prediction_timeout(
-            ws, room_id,
-            room_manager.user_words,
-            room_manager.last_prediction_time,
-            room_manager.send_queues,
-            room_manager.rooms
-        ))
+        asyncio.create_task(monitor_prediction_timeout(ws, room_id))
 
     try:
         while True:
@@ -74,10 +70,7 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
                 asyncio.create_task(handle_landmark(
                     ws, room_id, d,
                     room_manager.rooms,
-                    room_manager.send_queues,
-                    room_manager.prev_predictions,
-                    room_manager.user_words,
-                    room_manager.last_prediction_time
+                    room_manager.send_queues
                 ))
 
             elif t == "text" and room_manager.user_types[ws] in ["청인", "응급기관"]:
@@ -116,6 +109,21 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
                         })
                     except Exception as e:
                         logger.error(f"[{room_id}] 인덱스 전송 실패: {e}")
+            
+                if words:
+                        try:
+                            sentence = words_to_sentence(words)
+                            audio_base64 = text_to_speech("ko-KR-Wavenet-D", sentence)
+
+                            for peer in room_manager.get_peers(room_id):
+                                await room_manager.get_queue(peer).put({
+                                    "type": "sentence",
+                                    "client_id": "peer" if peer != ws else "self",
+                                    "sentence": sentence,
+                                    "audio_base64": audio_base64
+                                })
+                        except Exception as e:
+                            logger.error(f"[{room_id}] 문장/TTS 생성 실패: {e}")
 
             elif t in ["offer", "answer", "candidate"]:
                 payload = {"type": t, "data": d}
