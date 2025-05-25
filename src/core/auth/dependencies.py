@@ -45,27 +45,20 @@ def get_current_user(
         )
     return user
 
-def get_user_info_from_token(token: str) -> dict:
+def get_user_info_from_token(token: str) -> User:
     try:
-
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-
         username = payload.get("sub")
+        if username is None:
+            raise ValueError("토큰에 username 없음")
+    except Exception:
+        raise ValueError("유효하지 않은 토큰")
 
-        if not username:
-            raise ValueError("토큰에 sub가 없습니다")
-
-        db = SessionLocal()
+    db = SessionLocal()
+    try:
         user = db.query(User).filter(User.username == username).first()
+        if user is None:
+            raise ValueError("유저 없음")
+        return user
+    finally:
         db.close()
-
-        if not user:
-            raise ValueError("유저가 존재하지 않습니다")
-
-        return {
-            "user": user,
-            "nickname": user.nickname,
-            "user_type": user.user_type
-        }
-    except PyJWTError as e:
-        raise ValueError("JWT 디코딩 실패")
