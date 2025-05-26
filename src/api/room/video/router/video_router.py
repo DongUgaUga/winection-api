@@ -73,10 +73,11 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
 
                     if sentence:
                         logger.info(f"[{room_id}] 예측된 문장: {sentence}")
-                        audio_base64 = sentence_to_speech("ko-KR-Wavenet-D", sentence)
-
+                        voice_label = parsed.get("voice", "성인 남자")
+                        voice_name = get_voice_name(voice_label)
+                        audio_base64 = sentence_to_speech(voice_name, sentence)
                         for peer in room_manager.get_peers(room_id):
-                            if room_manager.user_types.get(peer) == "청인":
+                            if room_manager.user_types.get(peer) in ["청인", "응급기관"]:
                                 await room_manager.get_queue(peer).put({
                                     "type": "sentence",
                                     "client_id": "peer" if peer != ws else "self",
@@ -125,24 +126,6 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
                         })
                     except Exception as e:
                         logger.error(f"[{room_id}] 인덱스 전송 실패: {e}")
-
-                if words:
-                    try:
-                        voice_label = parsed.get("voice", "성인 남자")
-                        voice_name = get_voice_name(voice_label)
-
-                        sentence = text_to_sentence(words)
-                        audio_base64 = sentence_to_speech(voice_name, sentence)
-                        logger.info(f"[{room_id}] 문장 생성 완료: {sentence}")
-                        for peer in room_manager.get_peers(room_id):
-                            await room_manager.get_queue(peer).put({
-                                "type": "sentence",
-                                "client_id": "peer" if peer != ws else "self",
-                                "sentence": sentence,
-                                "audio_base64": audio_base64
-                            })
-                    except Exception as e:
-                        logger.error(f"[{room_id}] 문장/TTS 생성 실패: {e}")
 
             elif t in ["offer", "answer", "candidate"]:
                 payload = {"type": t, "data": d}
