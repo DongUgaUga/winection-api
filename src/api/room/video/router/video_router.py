@@ -77,6 +77,7 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
 
             elif t == "text" and room_manager.user_types[ws] in ["청인", "응급기관"]:
                 input_text = str(d.get("text", ""))
+                avatar = parsed.get("avatar")
                 logger.info(f"[{room_id}] STT 텍스트 수신: {input_text}")
 
                 motions = []
@@ -108,6 +109,7 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
                         await room_manager.get_queue(peer).put({
                             "type": "motions",
                             "client_id": "peer" if peer != ws else "self",
+                            "avatar": avatar,
                             "data": motions
                         })
                     except Exception as e:
