@@ -3,6 +3,7 @@ from core.auth.dependencies import get_user_info_from_token, get_db_context
 from collections import deque
 from sqlalchemy.exc import SQLAlchemyError
 from starlette.websockets import WebSocketState
+from core.log.logging import logger
 
 router = APIRouter()
 
@@ -70,7 +71,7 @@ async def deaf_waitqueue_ws(
                     }
                 })
             except Exception as e:
-                print(f"🚨 agency_ws 전송 실패: {e}")
+                logger.error(f"agency_ws 전송 실패: {e}")
 
     try:
         while True:
