@@ -2,18 +2,20 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
 import json
 import asyncio
 from datetime import datetime, timedelta, timezone
-
 from core.log.logging import logger
-from src.api.room.video.services.to_sign.text_to_word import text_to_word
-from src.api.room.video.services.to_sign.word_to_index import word_to_index, get_all_sign_words
-from src.api.room.video.util.websocket_util import sender_loop, notify_peer_leave
+
 from src.api.room.video.util.room_manager import room_manager
+from src.api.room.video.util.websocket_util import sender_loop, notify_peer_leave
+
 from core.auth.dependencies import get_user_info_from_token
 from core.auth.dependencies import get_db_context
 
-from src.api.room.video.services.to_speech.text_to_sentence import text_to_sentence
 from src.api.room.video.services.to_speech.sign_to_text import sign_to_text
+from src.api.room.video.services.to_speech.text_to_sentence import text_to_sentence
 from src.api.room.video.services.to_speech.sentence_to_speech import sentence_to_speech, get_voice_name
+
+from src.api.room.video.services.to_sign.text_to_word import text_to_word
+from src.api.room.video.services.to_sign.word_to_index import word_to_index, get_all_sign_words
 
 router = APIRouter()
 
@@ -46,15 +48,14 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
     KST = timezone(timedelta(hours=9))
     room_call_start_time[room_id] = datetime.now(KST).isoformat(timespec="seconds")
 
-    for target in room_manager.get_peers(room_id):
-        for peer in room_manager.get_peers(room_id):
-            await room_manager.get_queue(target).put({
-                "type": "startCall",
-                "client_id": "peer" if target != peer else "self",
-                "nickname": room_manager.user_nicknames.get(peer, "알 수 없음"),
-                "user_type": room_manager.user_types.get(peer, "청인"),
-                "started_at": room_call_start_time[room_id]
-            })
+    for peer in room_manager.get_peers(room_id):
+        await room_manager.get_queue(peer).put({
+            "type": "startCall",
+            "client_id": "peer" if peer != ws else "self",
+            "nickname": room_manager.user_nicknames.get(peer, "알 수 없음"),
+            "user_type": room_manager.user_types.get(peer, "청인"),
+            "started_at": room_call_start_time[room_id]
+        })
 
     if user_type == "농인":
         logger.info(f"[{room_id}] 농인 좌표: ")
@@ -69,13 +70,16 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
             if t == "land_mark" and room_manager.user_types[ws] == "농인":
                 try:
                     sequence = {"pose": d.get("land_mark", [])}
-                    sentence = sign_to_text(sequence)
+                    words = sign_to_text(sequence)
 
-                    if sentence:
+                    if words:
+                        sentence = text_to_sentence(words)
                         logger.info(f"[{room_id}] 예측된 문장: {sentence}")
+
                         voice_label = parsed.get("voice", "성인 남자")
                         voice_name = get_voice_name(voice_label)
                         audio_base64 = sentence_to_speech(voice_name, sentence)
+
                         for peer in room_manager.get_peers(room_id):
                             if room_manager.user_types.get(peer) in ["청인", "응급기관"]:
                                 await room_manager.get_queue(peer).put({
@@ -84,8 +88,9 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
                                     "sentence": sentence,
                                     "audio_base64": audio_base64
                                 })
-                except Exception as e:
+                except Exception as e: 
                     logger.error(f"[{room_id}] 수어 예측 실패: {e}", exc_info=True)
+
 
             elif t == "text" and room_manager.user_types[ws] in ["청인", "응급기관"]:
                 input_text = str(d.get("text", ""))
