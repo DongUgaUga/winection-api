@@ -48,17 +48,15 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
     KST = timezone(timedelta(hours=9))
     room_call_start_time[room_id] = datetime.now(KST).isoformat(timespec="seconds")
 
-    for peer in room_manager.get_peers(room_id):
-        await room_manager.get_queue(peer).put({
-            "type": "startCall",
-            "client_id": "peer" if peer != ws else "self",
-            "nickname": room_manager.user_nicknames.get(peer, "알 수 없음"),
-            "user_type": room_manager.user_types.get(peer, "청인"),
-            "started_at": room_call_start_time[room_id]
-        })
-
-    if user_type == "농인":
-        logger.info(f"[{room_id}] 농인 좌표: ")
+    for target in room_manager.get_peers(room_id):
+        for peer in room_manager.get_peers(room_id):
+            await room_manager.get_queue(target).put({
+                "type": "startCall",
+                "client_id": "peer" if target != peer else "self",
+                "nickname": room_manager.user_nicknames.get(peer, "알 수 없음"),
+                "user_type": room_manager.user_types.get(peer, "청인"),
+                "started_at": room_call_start_time[room_id]
+            })
 
     try:
         while True:
@@ -68,8 +66,10 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
             d = parsed.get("data")
 
             if t == "land_mark" and room_manager.user_types[ws] == "농인":
+                pose_data = d.get("pose", [])
+                # logger.info(f"[{room_id}] 수신된 수어 좌표: {pose_data}")
                 try:
-                    sequence = {"pose": d.get("land_mark", [])}
+                    sequence = {"pose": pose_data}
                     words = sign_to_text(sequence)
 
                     if words:
