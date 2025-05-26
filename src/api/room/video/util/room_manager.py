@@ -4,6 +4,8 @@ from datetime import datetime
 from typing import Dict, List
 from fastapi import WebSocket
 
+from src.api.room.video.services.to_speech.sign_to_text import SignPredictorState
+
 class RoomManager:
     def __init__(self):
         self.rooms: Dict[str, List[WebSocket]] = {}
@@ -14,6 +16,8 @@ class RoomManager:
         self.user_types: Dict[WebSocket, str] = {}
         self.last_prediction_time: Dict[WebSocket, datetime] = {}
         self.prev_predictions: Dict[WebSocket, str] = {}
+
+        self.sign_states: Dict[WebSocket, SignPredictorState] = {}
 
     def join(self, room_id: str, ws: WebSocket, nickname: str, user_type: str) -> str:
         if room_id not in self.rooms:
@@ -26,6 +30,9 @@ class RoomManager:
         self.user_types[ws] = user_type
         self.last_prediction_time[ws] = datetime.utcnow()
         self.prev_predictions[ws] = ""
+
+        self.sign_states[ws] = SignPredictorState()
+
         return self.client_labels[ws]
 
     def disconnect(self, room_id: str, ws: WebSocket):
@@ -40,7 +47,8 @@ class RoomManager:
         for store in [
             self.send_queues, self.user_words, self.client_labels,
             self.user_nicknames, self.user_types,
-            self.last_prediction_time, self.prev_predictions
+            self.last_prediction_time, self.prev_predictions,
+            self.sign_states
         ]:
             store.pop(ws, None)
 
@@ -55,5 +63,5 @@ class RoomManager:
 
     def get_queue(self, ws: WebSocket) -> Queue:
         return self.send_queues[ws]
-    
+
 room_manager = RoomManager()
