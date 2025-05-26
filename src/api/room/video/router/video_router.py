@@ -16,6 +16,9 @@ from src.api.room.video.services.to_speech.sentence_to_speech import sentence_to
 
 from src.api.room.video.services.to_sign.text_to_word import text_to_word
 from src.api.room.video.services.to_sign.word_to_index import word_to_index, get_all_sign_words
+import time # 테스트용으로 10초마다 전송
+
+last_sent_map: dict[WebSocket, datetime] = {} # 테스트용으로 10초마다 전송
 
 router = APIRouter()
 
@@ -73,8 +76,11 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
                     state = room_manager.sign_states.get(ws)
                     # words = sign_to_text(sequence, state)
                     words = "hi"
-                    if words:
+                    now = datetime.utcnow() # 테스트용으로 10초마다 전송
+                    last_sent = last_sent_map.get(ws, now - timedelta(seconds=11)) # 테스트용으로 10초마다 전송
+                    if (now - last_sent).total_seconds() >= 10: # words: # 테스트용으로 10초마다 전송
                         # sentence = text_to_sentence(words)
+                        # logger.info(f"[{room_id}] 예측된 문장: {sentence}")
                         sentence = "이동우는 잘생겼다."
                         logger.info(f"[{room_id}] 예측된 문장: {sentence}")
 
@@ -84,12 +90,14 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
 
                         for peer in room_manager.get_peers(room_id):
                             if room_manager.user_types.get(peer) in ["청인", "응급기관"]:
+                                logger.info(f"[{room_id}] 전송: {sentence}, {audio_base64}")
                                 await room_manager.get_queue(peer).put({
                                     "type": "sentence",
                                     "client_id": "peer" if peer != ws else "self",
                                     "sentence": sentence,
                                     "audio_base64": audio_base64
                                 })
+                        last_sent_map[ws] = now # 테스트용으로 10초마다 전송
 
                 except Exception as e:
                     logger.error(f"[{room_id}] 수어 예측 실패: {e}", exc_info=True)
