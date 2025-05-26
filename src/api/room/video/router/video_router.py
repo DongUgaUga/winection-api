@@ -67,13 +67,15 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
 
             if t == "land_mark" and room_manager.user_types[ws] == "농인":
                 pose_data = d.get("pose", [])
-                # logger.info(f"[{room_id}] 수신된 수어 좌표: {pose_data}")
                 try:
                     sequence = {"pose": pose_data}
-                    words = sign_to_text(sequence)
 
+                    state = room_manager.sign_states.get(ws)
+                    words = sign_to_text(sequence, state)
+                    words = "hi"
                     if words:
-                        sentence = text_to_sentence(words)
+                        # sentence = text_to_sentence(words)
+                        sentence = "이동우는 잘생겼다."
                         logger.info(f"[{room_id}] 예측된 문장: {sentence}")
 
                         voice_label = parsed.get("voice", "성인 남자")
@@ -88,7 +90,8 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
                                     "sentence": sentence,
                                     "audio_base64": audio_base64
                                 })
-                except Exception as e: 
+
+                except Exception as e:
                     logger.error(f"[{room_id}] 수어 예측 실패: {e}", exc_info=True)
 
 
