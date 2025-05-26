@@ -71,7 +71,7 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
                     sequence = {"pose": pose_data}
 
                     state = room_manager.sign_states.get(ws)
-                    words = sign_to_text(sequence, state)
+                    # words = sign_to_text(sequence, state)
                     words = "hi"
                     if words:
                         # sentence = text_to_sentence(words)
