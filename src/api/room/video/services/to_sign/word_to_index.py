@@ -1,9 +1,8 @@
 from sqlalchemy.orm import Session
-from core.db.database import get_db
 from typing import Optional
-from core.auth.models import SignWord
+from core.db.models import SignWord
 
-def get_index_by_word(word: str, db: Session) -> Optional[int]:
+def word_to_index(word: str, db: Session) -> Optional[int]:
     """
     단어에 해당하는 인덱스를 DB에서 조회
     """

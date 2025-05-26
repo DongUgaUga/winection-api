@@ -5,16 +5,15 @@ from datetime import datetime, timedelta, timezone
 
 from core.log.logging import logger
 from src.api.room.video.services.to_sign.text_to_word import text_to_word
-from src.api.room.video.services.to_sign.word_to_index import get_index_by_word, get_all_sign_words
+from src.api.room.video.services.to_sign.word_to_index import word_to_index, get_all_sign_words
 from src.api.room.video.util.websocket_util import sender_loop, notify_peer_leave
 from src.api.room.video.util.room_manager import room_manager
 from core.auth.dependencies import get_user_info_from_token
-from core.db.database import get_db
 from core.auth.dependencies import get_db_context
 
-from src.api.room.video.services.to_speech.sign_to_text import ksl_to_korean
-from src.api.room.video.services.to_speech.text_to_sentence import words_to_sentence
-from src.api.room.video.services.to_speech.sentence_to_speech import text_to_speech
+from src.api.room.video.services.to_speech.text_to_sentence import text_to_sentence
+from src.api.room.video.services.to_speech.sign_to_text import sign_to_text
+from src.api.room.video.services.to_speech.sentence_to_speech import sentence_to_speech, get_voice_name
 
 router = APIRouter()
 
@@ -70,11 +69,11 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
             if t == "land_mark" and room_manager.user_types[ws] == "농인":
                 try:
                     sequence = {"pose": d.get("land_mark", [])}
-                    sentence = ksl_to_korean(sequence)
+                    sentence = sign_to_text(sequence)
 
                     if sentence:
                         logger.info(f"[{room_id}] 예측된 문장: {sentence}")
-                        audio_base64 = text_to_speech("ko-KR-Wavenet-D", sentence)
+                        audio_base64 = sentence_to_speech("ko-KR-Wavenet-D", sentence)
 
                         for peer in room_manager.get_peers(room_id):
                             if room_manager.user_types.get(peer) == "청인":
@@ -101,7 +100,7 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
                         words = text_to_word(input_text, word_list)
 
                         for word in words:
-                            idx = get_index_by_word(word, db)
+                            idx = word_to_index(word, db)
                             if idx is not None:
                                 motions.append({"word": word, "index": idx})
                                 results_for_log.append(f"({word}, {idx})")
@@ -129,8 +128,11 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
 
                 if words:
                     try:
-                        sentence = words_to_sentence(words)
-                        audio_base64 = text_to_speech("ko-KR-Wavenet-D", sentence)
+                        voice_label = parsed.get("voice", "성인 남자")
+                        voice_name = get_voice_name(voice_label)
+
+                        sentence = text_to_sentence(words)
+                        audio_base64 = sentence_to_speech(voice_name, sentence)
                         logger.info(f"[{room_id}] 문장 생성 완료: {sentence}")
                         for peer in room_manager.get_peers(room_id):
                             await room_manager.get_queue(peer).put({

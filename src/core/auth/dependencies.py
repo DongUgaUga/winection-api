@@ -7,7 +7,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 
 from sqlalchemy.orm import Session
-from core.auth.models import User
+from core.db.models import User
 from core.db.database import get_db, SessionLocal
 
 from contextlib import contextmanager

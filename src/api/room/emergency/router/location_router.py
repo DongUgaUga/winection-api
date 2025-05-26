@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Request, HTTPException
 from sqlalchemy.orm import Session
 from core.auth.dependencies import get_current_user
-from core.auth.models import User
+from core.db.models import User
 from core.schemas.room_schema import LocationRequest, MessageResponse
 from core.db.database import get_db
 from api.room.emergency.service.haversine import haversine

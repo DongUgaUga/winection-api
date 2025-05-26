@@ -1,5 +1,3 @@
-# src/api/room/to_speech/services/to_sign/text_to_word.py
-
 import openai
 from core.config.env_config import OPENAI_API_KEY
 from core.log.logging import logger

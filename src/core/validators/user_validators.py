@@ -1,7 +1,7 @@
 import re
 from sqlalchemy.orm import Session
 from core.schemas.user_schema import RegisterRequest
-from core.auth.models import User
+from core.db.models import User
 
 def is_nickname_taken(nickname: str, db: Session) -> bool:
     return db.query(User).filter(User.nickname == nickname).first() is not None

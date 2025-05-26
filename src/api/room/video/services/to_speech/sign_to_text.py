@@ -1,7 +1,7 @@
 import numpy as np
 from tensorflow.keras.models import load_model
 from core.log.logging import logger
-from src.api.room.video.services.to_speech.text_to_sentence import words_to_sentence  # ✅ 단어 → 문장만 위임
+from src.api.room.video.services.to_speech.text_to_sentence import text_to_sentence
 
 model = load_model("src/resources/sign_model.h5")
 class_names = np.load("src/resources/class_names.npy", allow_pickle=True)
@@ -24,7 +24,7 @@ def normalize_landmarks(frame: list[dict]) -> np.ndarray:
     coords /= (scale + 1e-6)
     return coords.flatten()
 
-def ksl_to_korean(sequence: dict) -> str:
+def sign_to_text(sequence: dict) -> str:
     global low_conf_counter, word_buffer, last_word
 
     pose = sequence.get('pose', [])
@@ -57,7 +57,7 @@ def ksl_to_korean(sequence: dict) -> str:
 
     if low_conf_counter >= NO_MOTION_FRAME_THRESHOLD:
         if word_buffer:
-            sentence = words_to_sentence(word_buffer)
+            sentence = text_to_sentence(word_buffer)
             logger.info(f"📝 문장 완성: {sentence}")
             word_buffer.clear()
             last_word = None

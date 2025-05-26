@@ -4,7 +4,7 @@ from core.log.logging import logger
 
 client = openai.OpenAI(api_key=OPENAI_API_KEY)
 
-def words_to_sentence(words: list[str]) -> str:
+def text_to_sentence(words: list[str]) -> str:
     """단어 리스트를 한국어 문장으로 변환"""
     if not words:
         return ""
@@ -28,6 +28,6 @@ def words_to_sentence(words: list[str]) -> str:
         logger.exception(f"[OpenAI] API 호출 중 오류 발생: {e}")
         return "문장 생성 실패"
     
-def stop_words_to_sentence(words: list[str]) ->str:
+def stop_text_to_sentence(words: list[str]) ->str:
         response = "과도한 api의 사용을 막기위해 잠시 기능을 중단했습니다."
         return response

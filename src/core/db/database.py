@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from core.auth.models import Base
+from core.db.models import Base
 from contextlib import asynccontextmanager
 from sqlalchemy.ext.asyncio import AsyncSession
 
