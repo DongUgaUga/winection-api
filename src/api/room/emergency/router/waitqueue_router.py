@@ -61,13 +61,16 @@ async def deaf_waitqueue_ws(
 
     async def notify_cancellation():
         agency_ws = app.state.emergency_waiting.get(emergency_code)
-        if agency_ws and agency_ws.application_state != WebSocketState.DISCONNECTED:
-            await agency_ws.send_json({
-                "type": "cancelCall",
-                "data": {
-                    "user_id": user_id
-                }
-            })
+        if agency_ws and agency_ws.application_state == WebSocketState.CONNECTED:
+            try:
+                await agency_ws.send_json({
+                    "type": "cancelCall",
+                    "data": {
+                        "user_id": user_id
+                    }
+                })
+            except Exception as e:
+                print(f"🚨 agency_ws 전송 실패: {e}")
 
     try:
         while True:
@@ -86,10 +89,13 @@ async def deaf_waitqueue_ws(
                 break
 
     except WebSocketDisconnect:
-        app.state.emergency_queues[emergency_code] = deque([
-            (uid, w) for uid, w in app.state.emergency_queues[emergency_code]
-            if uid != user_id
-        ])
+        queue = app.state.emergency_queues.get(emergency_code)
+        if queue:
+            app.state.emergency_queues[emergency_code] = deque([
+                (uid, w) for uid, w in queue if uid != user_id
+            ])
+
         app.state.users.pop(user_id, None)
         app.state.emergency_locations.pop(user_id, None)
+
         await notify_cancellation()
