@@ -6,14 +6,13 @@ from datetime import datetime, timedelta, timezone
 from core.log.logging import logger
 from src.api.room.video.services.to_sign.text_to_word import text_to_word
 from src.api.room.video.services.to_sign.word_to_index import get_index_by_word, get_all_sign_words
-from src.api.room.video.util.landmark_util import handle_landmark
-from src.api.room.video.util.timeout_monitor import monitor_prediction_timeout
 from src.api.room.video.util.websocket_util import sender_loop, notify_peer_leave
 from src.api.room.video.util.room_manager import room_manager
 from core.auth.dependencies import get_user_info_from_token
 from core.db.database import get_db
 from core.auth.dependencies import get_db_context
 
+from src.api.room.video.services.to_speech.sign_to_text import ksl_to_korean
 from src.api.room.video.services.to_speech.text_to_sentence import words_to_sentence
 from src.api.room.video.services.to_speech.sentence_to_speech import text_to_speech
 
@@ -59,7 +58,7 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
             })
 
     if user_type == "농인":
-        asyncio.create_task(monitor_prediction_timeout(ws, room_id))
+        logger.info(f"[{room_id}] 농인 좌표: ")
 
     try:
         while True:
@@ -69,11 +68,24 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
             d = parsed.get("data")
 
             if t == "land_mark" and room_manager.user_types[ws] == "농인":
-                asyncio.create_task(handle_landmark(
-                    ws, room_id, d,
-                    room_manager.rooms,
-                    room_manager.send_queues
-                ))
+                try:
+                    sequence = {"pose": d.get("land_mark", [])}
+                    sentence = ksl_to_korean(sequence)
+
+                    if sentence:
+                        logger.info(f"[{room_id}] 예측된 문장: {sentence}")
+                        audio_base64 = text_to_speech("ko-KR-Wavenet-D", sentence)
+
+                        for peer in room_manager.get_peers(room_id):
+                            if room_manager.user_types.get(peer) == "청인":
+                                await room_manager.get_queue(peer).put({
+                                    "type": "sentence",
+                                    "client_id": "peer" if peer != ws else "self",
+                                    "sentence": sentence,
+                                    "audio_base64": audio_base64
+                                })
+                except Exception as e:
+                    logger.error(f"[{room_id}] 수어 예측 실패: {e}", exc_info=True)
 
             elif t == "text" and room_manager.user_types[ws] in ["청인", "응급기관"]:
                 input_text = str(d.get("text", ""))
@@ -119,7 +131,7 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
                     try:
                         sentence = words_to_sentence(words)
                         audio_base64 = text_to_speech("ko-KR-Wavenet-D", sentence)
-
+                        logger.info(f"[{room_id}] 문장 생성 완료: {sentence}")
                         for peer in room_manager.get_peers(room_id):
                             await room_manager.get_queue(peer).put({
                                 "type": "sentence",
@@ -174,10 +186,10 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
             room_manager.rooms,
             room_manager.send_queues,
             room_manager.client_labels,
-            room_manager.leave
+            room_manager.disconnect
         )
-        room_manager.leave(room_id, ws)
+        room_manager.disconnect(room_id, ws)
 
     except Exception as e:
         logger.error(f"[{room_id}] WebSocket 처리 오류: {e}", exc_info=True)
-        room_manager.leave(room_id, ws)
+        room_manager.disconnect(room_id, ws)

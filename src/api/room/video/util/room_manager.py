@@ -28,7 +28,7 @@ class RoomManager:
         self.prev_predictions[ws] = ""
         return self.client_labels[ws]
 
-    def leave(self, room_id: str, ws: WebSocket):
+    def disconnect(self, room_id: str, ws: WebSocket):
         if ws in self.rooms.get(room_id, []):
             self.rooms[room_id].remove(ws)
 
