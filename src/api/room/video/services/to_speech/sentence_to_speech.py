@@ -6,14 +6,14 @@ from core.log.logging import logger
 from core.config.env_config import GOOGLE_API_KEY, PROJECT_ID
 
 VOICE_MAP = {
-    "성인 남자": "ko-KR-Wavenet-D",
-    "성인 여자": "ko-KR-Wavenet-A",
-    "어린 남자": "ko-KR-Wavenet-B",
-    "어린 여자": "ko-KR-Wavenet-C",
+    "성인 남자": "ko-KR-Standard-C",
+    "성인 여자": "ko-KR-Chirp3-HD-Erinome",
+    "어린 남자": "ko-KR-Chirp3-HD-Orus",
+    "어린 여자": "ko-KR-Wavenet-A",
 }
 
 def get_voice_name(label: str) -> str:
-    return VOICE_MAP.get(label, "ko-KR-Wavenet-D")
+    return VOICE_MAP.get(label, "ko-KR-Standard-C")
 
 def sentence_to_speech(voice_name: str, text: str) -> str:
     try:
