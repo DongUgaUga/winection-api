@@ -100,7 +100,29 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
 
                 except Exception as e:
                     logger.error(f"[{room_id}] 수어 예측 실패: {e}", exc_info=True)
+                    
+            elif t == "words":
+                word_str = str(d.get("text", "")).strip()
+                voice_label = parsed.get("voice", "성인 남자")
+                voice_name = get_voice_name(voice_label)
+                
+                words = word_str.split()
+                if words:
+                    try:
+                        sentence = text_to_sentence(words)
+                        audio_base64 = sentence_to_speech(voice_name, sentence)
+                        logger.info(f"[{room_id}] 수어 단어 직접입력 → 문장: {sentence}")
 
+                        for peer in room_manager.get_peers(room_id):
+                            if room_manager.user_types.get(peer) in ["청인", "응급기관"]:
+                                await room_manager.get_queue(peer).put({
+                                    "type": "sentence",
+                                    "client_id": "peer" if peer != ws else "self",
+                                    "sentence": sentence,
+                                    "audio_base64": audio_base64
+                                })
+                    except Exception as e:
+                        logger.error(f"[{room_id}] 직접 입력 수어 처리 실패: {e}")
 
             elif t == "text" and room_manager.user_types[ws] in ["청인", "응급기관"]:
                 input_text = str(d.get("text", ""))
