@@ -5,9 +5,6 @@ from core.log.logging import logger
 client = openai.OpenAI(api_key=OPENAI_API_KEY)
 
 def text_to_word(sentence: str, word_list: list[str]) -> list[str]:
-    """
-    입력 문장을 받아 GPT를 이용해 DB에 존재하는 단어만 추출하여 수어 어순으로 반환.
-    """
     system_prompt = (
         f"너는 수어 통역사야.\n"
         f"사용자가 문장을 입력하면, 반드시 아래 '단어 목록'에 존재하는 단어로만 이루어진 수어 어순의 단어 나열로 변환해야 해.\n"
