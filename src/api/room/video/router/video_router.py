@@ -136,6 +136,7 @@ async def websocket_endpoint(ws: WebSocket, room_id: str, token: str = Query(...
                         await room_manager.get_queue(peer).put({
                             "type": "motions",
                             "client_id": "peer" if peer != ws else "self",
+                            "sentence": input_text,
                             "avatar": avatar,
                             "data": motions
                         })
